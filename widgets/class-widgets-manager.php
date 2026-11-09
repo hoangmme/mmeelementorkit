@@ -51,6 +51,16 @@ class Ems_Widgets_Manager {
                 'tags'        => array( __( 'ACF / SCF', 'mme-elementor-kit' ), __( 'Post meta', 'mme-elementor-kit' ), __( 'Dynamic tags', 'mme-elementor-kit' ) ),
                 'usage'       => __( 'Add it to a single post template, pick a field for each row, then style it from the Style tab.', 'mme-elementor-kit' ),
             ),
+            'map'        => array(
+                'class'       => __NAMESPACE__ . '\Ems_Map_Widget',
+                'file'        => __DIR__ . '/map/class-map-widget.php',
+                'name'        => 'mme-map',
+                'title'       => __( 'Map (no API key)', 'mme-elementor-kit' ),
+                'description' => __( 'Google Maps embed without an API key. The location can be an address, "lat,lng", a Google Maps link (including maps.app.goo.gl) or an ACF Google Map / Link field.', 'mme-elementor-kit' ),
+                'icon'        => 'dashicons-location-alt',
+                'tags'        => array( __( 'No API key', 'mme-elementor-kit' ), __( 'ACF / SCF', 'mme-elementor-kit' ), __( 'Google Maps link', 'mme-elementor-kit' ) ),
+                'usage'       => __( 'Store the Google Maps link of each place in a field (e.g. "map"), then point the widget at that field.', 'mme-elementor-kit' ),
+            ),
         );
     }
 
@@ -102,6 +112,7 @@ class Ems_Widgets_Manager {
      */
     public function register_styles() {
         wp_register_style( 'mme-info-table', EMS_ELEMENTS_SHARE_URL . 'widgets/assets/css/info-table.css', array(), EMS_ELEMENTS_SHARE_VERSION );
+        wp_register_style( 'mme-map', EMS_ELEMENTS_SHARE_URL . 'widgets/assets/css/map.css', array(), EMS_ELEMENTS_SHARE_VERSION );
     }
 
     /**
@@ -111,6 +122,8 @@ class Ems_Widgets_Manager {
      * @return array
      */
     private function get_enabled_instances() {
+        require_once __DIR__ . '/trait-field-source.php';
+
         $instances = array();
         foreach ( self::get_widgets() as $key => $widget ) {
             if ( ! self::is_enabled( $key ) ) {
