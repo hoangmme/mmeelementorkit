@@ -4,6 +4,7 @@ use Ems_Elements_Share\Admin\Ems_Key_Manager;
 use Ems_Elements_Share\Admin\Ems_Keys_Transfer;
 use Ems_Elements_Share\Admin\Ems_Master_License;
 use Ems_Elements_Share\Admin\Ems_Receiver_Manager;
+use Ems_Elements_Share\Admin\Ems_Updater;
 
 /**
  * Class responsible for handling menu items and pages.
@@ -21,6 +22,16 @@ class Ems_Elements_Share_Menu_Handler {
 	const CLIENT_SLUG = 'mme-elementor-kit-client';
 
 	/**
+	 * Slug of the widgets page.
+	 */
+	const WIDGETS_SLUG = 'mme-elementor-kit-widgets';
+
+	/**
+	 * Slug of the updates page.
+	 */
+	const UPDATES_SLUG = 'mme-elementor-kit-updates';
+
+	/**
 	 * Register all menu items.
 	 *
 	 * @return void
@@ -33,6 +44,10 @@ class Ems_Elements_Share_Menu_Handler {
 		// The first submenu replaces the auto-generated duplicate of the parent item.
 		add_submenu_page( self::MASTER_SLUG, __( 'Master (Server)', 'mme-elementor-kit' ), __( 'Master (Server)', 'mme-elementor-kit' ), $capability, self::MASTER_SLUG, array( $this, 'render_master_page' ) );
 		add_submenu_page( self::MASTER_SLUG, __( 'Client', 'mme-elementor-kit' ), __( 'Client', 'mme-elementor-kit' ), $capability, self::CLIENT_SLUG, array( $this, 'render_client_page' ) );
+		add_submenu_page( self::MASTER_SLUG, __( 'Widgets', 'mme-elementor-kit' ), __( 'Widgets', 'mme-elementor-kit' ), $capability, self::WIDGETS_SLUG, array( $this, 'render_widgets_page' ) );
+
+		$update_count = Ems_Updater::get_instance()->has_update( false ) ? ' <span class="update-plugins count-1"><span class="plugin-count">1</span></span>' : '';
+		add_submenu_page( self::MASTER_SLUG, __( 'Updates', 'mme-elementor-kit' ), __( 'Updates', 'mme-elementor-kit' ) . $update_count, 'update_plugins', self::UPDATES_SLUG, array( $this, 'render_updates_page' ) );
 	}
 
 	/**
@@ -41,7 +56,7 @@ class Ems_Elements_Share_Menu_Handler {
 	 * @return boolean
 	 */
 	public static function is_plugin_page() {
-		return isset( $_GET['page'] ) && in_array( $_GET['page'], array( self::MASTER_SLUG, self::CLIENT_SLUG ), true );
+		return isset( $_GET['page'] ) && in_array( $_GET['page'], array( self::MASTER_SLUG, self::CLIENT_SLUG, self::WIDGETS_SLUG, self::UPDATES_SLUG ), true );
 	}
 
 	/**
@@ -72,5 +87,26 @@ class Ems_Elements_Share_Menu_Handler {
 		$receiver_manager = Ems_Receiver_Manager::get_instance();
 		$active_page      = self::CLIENT_SLUG;
 		require_once __DIR__ . '/templates/client-page.php';
+	}
+
+	/**
+	 * Output the widgets page.
+	 *
+	 * @return void
+	 */
+	public function render_widgets_page() {
+		$active_page = self::WIDGETS_SLUG;
+		require_once __DIR__ . '/templates/widgets-page.php';
+	}
+
+	/**
+	 * Output the updates page.
+	 *
+	 * @return void
+	 */
+	public function render_updates_page() {
+		$updater     = Ems_Updater::get_instance();
+		$active_page = self::UPDATES_SLUG;
+		require_once __DIR__ . '/templates/updates-page.php';
 	}
 }

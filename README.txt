@@ -4,7 +4,7 @@ Plugin URI: https://mme.vn
 Tags: elementor, templates, template library, acf, scf
 Requires at least: 5.5
 Requires PHP: 7.2
-Stable tag: 1.1.0
+Stable tag: 1.2.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -23,6 +23,10 @@ Site Master và Client đều cần cài plugin này cùng Elementor.
 Phát triển dựa trên "Elements Share for Elementor" của DivDojo (GPL-2.0+).
 
 == Changelog ==
+
+= 1.2.0 =
+* New: Updates page — the plugin updates itself from github.com/hoangmme/mmeelementorkit (branch main) through the normal WordPress update screen.
+* New: Widgets page listing every MMe widget with an on / off switch and an environment check (Elementor, Elementor Pro, ACF / SCF).
 
 = 1.1.0 =
 * Đổi tên thành MMe Elementor Kit (MMe.vn).

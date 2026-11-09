@@ -231,6 +231,13 @@
 		});
 
 		/*
+		 * Widgets page
+		 */
+		$(document).on('change', '.ems-switch input', function(){
+			$(this).closest('.ems-widget').toggleClass('is-disabled', !this.checked);
+		});
+
+		/*
 		 * Shared helpers
 		 */
 		$(document).on('click', '[data-ems-copy]', function(){

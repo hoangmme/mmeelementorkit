@@ -11,9 +11,58 @@ class Ems_Widgets_Manager {
      */
     const CATEGORY = 'mme-widgets';
 
+    /**
+     * Option holding the keys of disabled widgets.
+     */
+    const DISABLED_OPTION = 'mme_kit_disabled_widgets';
+
+    /**
+     * Notice shown after saving: array( type, message ).
+     *
+     * @var array|null
+     */
+    private static $notice = null;
+
     public function __construct() {
         // Only fires when Elementor is active.
         add_action( 'elementor/init', array( $this, 'init' ) );
+
+        // Widgets admin page.
+        add_action( 'admin_init', array( $this, 'handle_form' ) );
+        add_action( 'ems_elements_share_widgets_notice', array( $this, 'add_notice' ) );
+    }
+
+    /**
+     * All widgets shipped with the plugin.
+     *
+     * Add new widgets here: the Widgets admin page and the registration both read this list.
+     *
+     * @return array
+     */
+    public static function get_widgets() {
+        return array(
+            'info-table' => array(
+                'class'       => __NAMESPACE__ . '\Ems_Info_Table_Widget',
+                'file'        => __DIR__ . '/info-table/class-info-table-widget.php',
+                'name'        => 'mme-info-table',
+                'title'       => __( 'Info Table (ACF)', 'mme-elementor-kit' ),
+                'description' => __( 'Two column label / value table. Values come from ACF or SCF fields, post meta, shortcodes or Elementor dynamic tags. Empty rows are hidden automatically.', 'mme-elementor-kit' ),
+                'icon'        => 'dashicons-editor-table',
+                'tags'        => array( __( 'ACF / SCF', 'mme-elementor-kit' ), __( 'Post meta', 'mme-elementor-kit' ), __( 'Dynamic tags', 'mme-elementor-kit' ) ),
+                'usage'       => __( 'Add it to a single post template, pick a field for each row, then style it from the Style tab.', 'mme-elementor-kit' ),
+            ),
+        );
+    }
+
+    /**
+     * Whether a widget is enabled.
+     *
+     * @param string $key
+     * @return boolean
+     */
+    public static function is_enabled( $key ) {
+        $disabled = get_option( self::DISABLED_OPTION, array() );
+        return ! in_array( $key, is_array( $disabled ) ? $disabled : array(), true );
     }
 
     /**
@@ -56,13 +105,21 @@ class Ems_Widgets_Manager {
     }
 
     /**
-     * Load widget classes. They extend Elementor classes, so they can only be
-     * required once Elementor is loaded.
+     * Instances of the enabled widgets. Widget classes extend Elementor classes,
+     * so they can only be required once Elementor is loaded.
      *
-     * @return void
+     * @return array
      */
-    private function include_widgets() {
-        require_once __DIR__ . '/info-table/class-info-table-widget.php';
+    private function get_enabled_instances() {
+        $instances = array();
+        foreach ( self::get_widgets() as $key => $widget ) {
+            if ( ! self::is_enabled( $key ) ) {
+                continue;
+            }
+            require_once $widget['file'];
+            $instances[] = new $widget['class']();
+        }
+        return $instances;
     }
 
     /**
@@ -72,8 +129,9 @@ class Ems_Widgets_Manager {
      * @return void
      */
     public function register_widgets( $widgets_manager ) {
-        $this->include_widgets();
-        $widgets_manager->register( new Ems_Info_Table_Widget() );
+        foreach ( $this->get_enabled_instances() as $widget ) {
+            $widgets_manager->register( $widget );
+        }
     }
 
     /**
@@ -82,7 +140,48 @@ class Ems_Widgets_Manager {
      * @return void
      */
     public function register_widgets_legacy() {
-        $this->include_widgets();
-        \Elementor\Plugin::instance()->widgets_manager->register_widget_type( new Ems_Info_Table_Widget() );
+        foreach ( $this->get_enabled_instances() as $widget ) {
+            \Elementor\Plugin::instance()->widgets_manager->register_widget_type( $widget );
+        }
+    }
+
+    /**
+     * Save the enabled widgets from the Widgets admin page.
+     *
+     * @return void
+     */
+    public function handle_form() {
+        if ( ! ( isset( $_POST['action'] ) && $_POST['action'] === 'mme_kit_save_widgets' ) ) {
+            return;
+        }
+
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( __( 'Are you cheating?', 'mme-elementor-kit' ) );
+        }
+        check_admin_referer( 'mme_kit_save_widgets', '_wp_nonce_widgets' );
+
+        $enabled  = isset( $_POST['mme_kit_widgets'] ) && is_array( $_POST['mme_kit_widgets'] ) ? array_map( 'sanitize_key', $_POST['mme_kit_widgets'] ) : array();
+        $disabled = array_values( array_diff( array_keys( self::get_widgets() ), $enabled ) );
+        update_option( self::DISABLED_OPTION, $disabled );
+
+        self::$notice = array( 'success', __( 'Widgets saved.', 'mme-elementor-kit' ) );
+    }
+
+    /**
+     * Display the save result.
+     *
+     * @return void
+     */
+    public function add_notice() {
+        if ( self::$notice === null ) {
+            return;
+        }
+        list( $type, $message ) = self::$notice;
+        ?>
+        <div class="ems-alert ems-alert--<?php echo esc_attr( $type ); ?>">
+            <span class="dashicons dashicons-yes-alt"></span>
+            <?php echo esc_html( $message ); ?>
+        </div>
+        <?php
     }
 }

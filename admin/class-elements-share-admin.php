@@ -6,6 +6,7 @@ use Ems_Elements_Share\Admin\Ems_Key_Manager;
 use Ems_Elements_Share\Admin\Ems_Keys_Transfer;
 use Ems_Elements_Share\Admin\Ems_Master_License;
 use Ems_Elements_Share\Admin\Ems_Receiver_Manager;
+use Ems_Elements_Share\Admin\Ems_Updater;
 
 /**
  * The admin-specific functionality of the plugin.
@@ -90,6 +91,9 @@ class Ems_Elements_Share_Admin {
 
 		// Rest Api Handler class
 		require_once EMS_ELEMENTS_SHARE_PATH . 'admin/partials/class-rest-api.php';
+
+		// GitHub updater class
+		require_once EMS_ELEMENTS_SHARE_PATH . 'admin/partials/class-updater.php';
 	}
 
 	/**
@@ -120,6 +124,9 @@ class Ems_Elements_Share_Admin {
 
 		// Initialize rest api
 		new Ems_Rest_Api();
+
+		// Initialize GitHub updater
+		Ems_Updater::get_instance();
 	}
 
 	/**

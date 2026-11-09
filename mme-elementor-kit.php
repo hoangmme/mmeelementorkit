@@ -16,7 +16,7 @@
  * Plugin Name:       MMe Elementor Kit
  * Plugin URI:        https://mme.vn
  * Description:       Bộ công cụ Elementor của MMe.vn: chia sẻ template từ site Master sang các site Client và widget động (Info Table ACF/SCF).
- * Version:           1.1.0
+ * Version:           1.2.0
  * Requires at least: 5.5
  * Requires PHP:      7.2
  * Requires Plugins:  elementor
@@ -38,13 +38,14 @@ if ( ! defined( 'WPINC' ) ) {
  * Start at version 1.0.0 and use SemVer - https://semver.org
  * Rename this for your plugin and update it as you release new versions.
  */
-define( 'EMS_ELEMENTS_SHARE_VERSION', '1.1.0' );
+define( 'EMS_ELEMENTS_SHARE_VERSION', '1.2.0' );
 
 /**
  * Define plugin path and plugin url.
  */
 define( 'EMS_ELEMENTS_SHARE_PATH', plugin_dir_path( __FILE__ ) );
 define( 'EMS_ELEMENTS_SHARE_URL', plugin_dir_url( __FILE__ ) );
+define( 'EMS_ELEMENTS_SHARE_BASENAME', plugin_basename( __FILE__ ) );
 
 /**
  * The code that runs during plugin activation.
