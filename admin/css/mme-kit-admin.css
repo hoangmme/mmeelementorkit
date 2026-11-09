@@ -665,6 +665,81 @@
     color: var(--ems-primary);
 }
 
+/* Master license */
+.ems-lock {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.ems-lock__card {
+    width: 100%;
+    max-width: 560px;
+}
+
+.ems-app .ems-lock__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    font-size: 24px;
+    color: var(--ems-amber);
+    background: var(--ems-amber-soft);
+    border-radius: 12px;
+}
+
+.ems-app .ems-lock__title {
+    margin: 14px 0 0;
+    padding: 0;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.ems-lock__card .ems-card__desc {
+    margin-bottom: 16px;
+}
+
+.ems-app textarea.ems-input {
+    min-height: 96px;
+    resize: vertical;
+    word-break: break-all;
+}
+
+.ems-meta {
+    margin: 12px 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.ems-meta li {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 0;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--ems-border);
+}
+
+.ems-meta li:last-child {
+    border-bottom: 0;
+}
+
+.ems-meta li > span:first-child {
+    color: var(--ems-muted);
+}
+
+.ems-meta strong {
+    overflow-wrap: anywhere;
+    text-align: right;
+}
+
+.ems-badge--success {
+    color: var(--ems-green);
+    background: var(--ems-green-soft);
+    border-color: #a7f3d0;
+}
+
 /* Client status hero */
 .ems-status {
     display: flex;

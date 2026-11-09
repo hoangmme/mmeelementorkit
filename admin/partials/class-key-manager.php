@@ -26,7 +26,7 @@ class Ems_Key_Manager {
      */
     private function verify_ajax_request() {
         check_ajax_referer( 'ems_elements_share_admin', 'nonce' );
-        if ( ! current_user_can( 'manage_options' ) ) {
+        if ( ! current_user_can( 'manage_options' ) || ! Ems_Master_License::get_instance()->is_active() ) {
             wp_die( __( 'Are you cheating?', 'mme-elementor-kit' ), 403 );
         }
     }
@@ -218,7 +218,6 @@ class Ems_Key_Manager {
      * @return array
      */
     public function get_rule_from_key( $key ) {
-        $rule = array();
         $all_rules = get_option( 'ems_elements_share_server_rules' );
         if ( is_array( $all_rules ) && count( $all_rules ) ) {
             foreach ($all_rules as $index => $rule) {
@@ -227,7 +226,33 @@ class Ems_Key_Manager {
                 }
             }
         }
-        return $rule;
+        return array();
+    }
+
+    /**
+     * Whether a template is shared with a key.
+     *
+     * @param string $key
+     * @param int    $template_id
+     * @return boolean
+     */
+    public function is_template_allowed( $key, $template_id ) {
+        $rule = $this->get_rule_from_key( $key );
+        $post = get_post( (int) $template_id );
+        if ( ! $rule || ! $post || 'elementor_library' !== $post->post_type ) {
+            return false;
+        }
+
+        $template_select_by = isset( $rule['template_select_by'] ) ? $rule['template_select_by'] : 'all';
+        if ( $template_select_by === 'categories' ) {
+            $categories = isset( $rule['categories'] ) ? array_map( 'intval', (array) $rule['categories'] ) : array();
+            return ! empty( $categories ) && has_term( $categories, 'elementor_library_category', $post );
+        }
+        if ( $template_select_by === 'templates' ) {
+            $templates = isset( $rule['templates'] ) ? array_map( 'intval', (array) $rule['templates'] ) : array();
+            return in_array( (int) $post->ID, $templates, true );
+        }
+        return true;
     }
 
     /**
@@ -240,7 +265,7 @@ class Ems_Key_Manager {
             return;
         }
         
-        if ( ! current_user_can( 'manage_options' ) ) {
+        if ( ! current_user_can( 'manage_options' ) || ! Ems_Master_License::get_instance()->is_active() ) {
             wp_die( __('Are you cheating?', 'mme-elementor-kit') );
         }
 

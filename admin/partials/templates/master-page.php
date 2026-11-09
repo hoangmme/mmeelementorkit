@@ -75,6 +75,31 @@ $usage = $stats['max_sites'] ? min( 100, round( $stats['active_sites'] / $stats[
         </main>
 
         <aside class="ems-layout__aside">
+            <?php
+            $license_data    = $license->get_status();
+            $license_expires = ! empty( $license_data['expires'] ) ? date_i18n( get_option( 'date_format' ), (int) $license_data['expires'] ) : __( 'Never', 'mme-elementor-kit' );
+            ?>
+            <div class="ems-card">
+                <h2 class="ems-card__title"><?php echo esc_html__( 'Master license', 'mme-elementor-kit' ); ?></h2>
+                <?php do_action( 'ems_elements_share_license_notice' ); ?>
+                <ul class="ems-meta">
+                    <li><span><?php echo esc_html__( 'Status', 'mme-elementor-kit' ); ?></span><span class="ems-badge ems-badge--success"><?php echo esc_html__( 'Active', 'mme-elementor-kit' ); ?></span></li>
+                    <li><span><?php echo esc_html__( 'Domain', 'mme-elementor-kit' ); ?></span><strong><?php echo esc_html( $license_data['domain'] ); ?></strong></li>
+                    <li><span><?php echo esc_html__( 'Expires', 'mme-elementor-kit' ); ?></span><strong><?php echo esc_html( $license_expires ); ?></strong></li>
+                    <?php if ( ! empty( $license_data['note'] ) ) : ?>
+                        <li><span><?php echo esc_html__( 'Note', 'mme-elementor-kit' ); ?></span><strong><?php echo esc_html( $license_data['note'] ); ?></strong></li>
+                    <?php endif; ?>
+                </ul>
+                <form action="" method="POST" class="ems-deactivate-master-form">
+                    <?php wp_nonce_field( 'mme_kit_master_license', '_wp_nonce_master_license' ); ?>
+                    <input type="hidden" name="action" value="mme_kit_deactivate_master">
+                    <button type="submit" class="ems-btn ems-btn--ghost ems-btn--block ems-field">
+                        <span class="dashicons dashicons-lock"></span>
+                        <?php echo esc_html__( 'Deactivate Master mode', 'mme-elementor-kit' ); ?>
+                    </button>
+                </form>
+            </div>
+
             <div class="ems-card">
                 <h2 class="ems-card__title"><?php echo esc_html__( 'Master site URL', 'mme-elementor-kit' ); ?></h2>
                 <p class="ems-card__desc"><?php echo esc_html__( 'Give this URL and a secret key to the client site.', 'mme-elementor-kit' ); ?></p>

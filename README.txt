@@ -12,7 +12,7 @@ Bộ công cụ Elementor của MMe.vn: chia sẻ template Master → Client và
 
 == Description ==
 
-* Master (Server): tạo secret key, chọn template / danh mục được chia sẻ và giới hạn số site cho mỗi key.
+* Master (Server): chỉ mở khi có mã kích hoạt do MMe.vn cấp cho đúng tên miền. Tạo secret key, chọn template / danh mục được chia sẻ và giới hạn số site cho mỗi key.
 * Client: kết nối tới site Master bằng URL + secret key, chèn template từ tab "MMe Library" trong thư viện Elementor.
 * MMe Widgets: "Info Table (ACF)" — bảng thông tin label / giá trị lấy từ field ACF/SCF, post meta, shortcode hoặc dynamic tag.
 
@@ -32,5 +32,7 @@ Phát triển dựa trên "Elements Share for Elementor" của DivDojo (GPL-2.0+
 * New: "Info Table (ACF)" Elementor widget (MMe Widgets category) — label/value rows from ACF/SCF fields, post meta, shortcodes or dynamic tags.
 * New: Export / Import secret keys (JSON) to move the master to another site; templates and categories are re-matched by slug or title.
 * Changed: REST API namespace is now `wp-json/mme-kit/v1` — master and client sites must both run 1.1.0+.
+* Security: Master mode requires an activation code signed by MMe.vn (Ed25519, bound to the site domain). Without it there is no Master page, no key management and no template API.
+* Security: a key can only download templates inside its own scope (template/{id} and template-json/{id}).
 * Security: nonce and capability checks on all admin ajax actions.
 * Fix: a key set to "Specific templates" with no template selected no longer exposes every template.

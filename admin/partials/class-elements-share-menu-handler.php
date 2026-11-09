@@ -2,6 +2,7 @@
 
 use Ems_Elements_Share\Admin\Ems_Key_Manager;
 use Ems_Elements_Share\Admin\Ems_Keys_Transfer;
+use Ems_Elements_Share\Admin\Ems_Master_License;
 use Ems_Elements_Share\Admin\Ems_Receiver_Manager;
 
 /**
@@ -49,9 +50,16 @@ class Ems_Elements_Share_Menu_Handler {
 	 * @return void
 	 */
 	public function render_master_page() {
+		$license     = Ems_Master_License::get_instance();
+		$active_page = self::MASTER_SLUG;
+
+		if ( ! $license->is_active() ) {
+			require_once __DIR__ . '/templates/master-locked.php';
+			return;
+		}
+
 		$key_manager   = Ems_Key_Manager::get_instance();
 		$keys_transfer = Ems_Keys_Transfer::get_instance();
-		$active_page   = self::MASTER_SLUG;
 		require_once __DIR__ . '/templates/master-page.php';
 	}
 

@@ -32,6 +32,11 @@ class Ems_Rest_Api {
 
 
     public function create_endpoints() {
+        // Only an activated master site serves templates.
+        if ( ! Ems_Master_License::get_instance()->is_active() ) {
+            return;
+        }
+
         // Templates
 		register_rest_route( 'mme-kit/v1', 'templates/ems_elementor_sections', array(
 			'methods'  => 'GET',
@@ -381,7 +386,12 @@ class Ems_Rest_Api {
 			status_header( 402, __( 'Site limit reached', 'mme-elementor-kit' ) );
 			exit;
 		}
-        
+
+		if ( !$key_manager->is_template_allowed( $key, $request['id'] ) ) {
+			status_header( 403, __( 'Template not shared with this key', 'mme-elementor-kit' ) );
+			exit;
+		}
+
         $template_id   = $request['id'];
         $json_file_url = add_query_arg( 'server_key', $key, get_rest_url( null, 'mme-kit/v1/template-json/' . $template_id ) );
         $request       = wp_remote_get($json_file_url);
@@ -415,6 +425,17 @@ class Ems_Rest_Api {
 		$key_manager = Ems_Key_Manager::get_instance();
 		if ( !$key_manager->is_key_valid( $key ) ) {
 			status_header( 429, __( 'Secret key not valid', 'mme-elementor-kit' ) );
+			exit;
+		}
+
+		// This endpoint is public too, so it must enforce the same limits as template/{id}.
+		if ( !$key_manager->has_site_limit( $key ) ) {
+			status_header( 402, __( 'Site limit reached', 'mme-elementor-kit' ) );
+			exit;
+		}
+
+		if ( !$key_manager->is_template_allowed( $key, $request['template_id'] ) ) {
+			status_header( 403, __( 'Template not shared with this key', 'mme-elementor-kit' ) );
 			exit;
 		}
 

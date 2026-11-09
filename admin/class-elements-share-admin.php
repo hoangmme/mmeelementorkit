@@ -4,6 +4,7 @@ use Ems_Elements_Share\Admin\Ems_Template_Library;
 use Ems_Elements_Share\Admin\Ems_Rest_Api;
 use Ems_Elements_Share\Admin\Ems_Key_Manager;
 use Ems_Elements_Share\Admin\Ems_Keys_Transfer;
+use Ems_Elements_Share\Admin\Ems_Master_License;
 use Ems_Elements_Share\Admin\Ems_Receiver_Manager;
 
 /**
@@ -75,6 +76,9 @@ class Ems_Elements_Share_Admin {
 		// Template library class
 		require_once EMS_ELEMENTS_SHARE_PATH . 'admin/partials/class-template-library.php';
 
+		// Master license class
+		require_once EMS_ELEMENTS_SHARE_PATH . 'admin/partials/class-master-license.php';
+
 		// Key Handler class
 		require_once EMS_ELEMENTS_SHARE_PATH . 'admin/partials/class-key-manager.php';
 
@@ -94,6 +98,9 @@ class Ems_Elements_Share_Admin {
 	 * @return void
 	 */
 	public function setup_hooks() {
+
+		// Initialize master license
+		Ems_Master_License::get_instance();
 
 		// Initialize key manager
 		Ems_Key_Manager::get_instance();

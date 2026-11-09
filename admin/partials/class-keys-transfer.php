@@ -46,7 +46,7 @@ class Ems_Keys_Transfer {
      * @return void
      */
     public function export() {
-        if ( ! current_user_can( 'manage_options' ) ) {
+        if ( ! current_user_can( 'manage_options' ) || ! Ems_Master_License::get_instance()->is_active() ) {
             wp_die( __( 'Are you cheating?', 'mme-elementor-kit' ) );
         }
         check_admin_referer( 'mme_kit_export_keys' );
@@ -130,7 +130,7 @@ class Ems_Keys_Transfer {
             return;
         }
 
-        if ( ! current_user_can( 'manage_options' ) ) {
+        if ( ! current_user_can( 'manage_options' ) || ! Ems_Master_License::get_instance()->is_active() ) {
             wp_die( __( 'Are you cheating?', 'mme-elementor-kit' ) );
         }
         check_admin_referer( 'mme_kit_import_keys', '_wp_nonce_import_keys' );

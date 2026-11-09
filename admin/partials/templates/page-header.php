@@ -8,7 +8,7 @@
 $ems_tabs = array(
     Ems_Elements_Share_Menu_Handler::MASTER_SLUG => array(
         'label' => __( 'Master (Server)', 'mme-elementor-kit' ),
-        'icon'  => 'dashicons-cloud-upload',
+        'icon'  => Ems_Elements_Share\Admin\Ems_Master_License::get_instance()->is_active() ? 'dashicons-cloud-upload' : 'dashicons-lock',
     ),
     Ems_Elements_Share_Menu_Handler::CLIENT_SLUG => array(
         'label' => __( 'Client', 'mme-elementor-kit' ),
