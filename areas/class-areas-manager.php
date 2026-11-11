@@ -467,10 +467,8 @@ class Ems_Areas_Manager {
     }
 
     /**
-     * Elementor previews an area on its own (blank) url. Once Elementor has set up the
-     * preview for the area, switch the main query to the parent post so the theme or
-     * the Elementor Pro Single template renders the real post around it, with the
-     * area's editable container in place of the area.
+     * Elementor previews an area on its own (blank) url. Remember which area is being
+     * edited; the switch to the parent post happens later, in swap_to_parent_query().
      *
      * @return void
      */
@@ -487,6 +485,26 @@ class Ems_Areas_Manager {
 
         $this->preview_area = array( 'id' => (int) $area->ID, 'parent' => (int) $parent->ID, 'name' => $name );
 
+        // Late on template_redirect: Elementor's own preview (priority 0) and frontend (10)
+        // setup must still see the area as the previewed post, or the frontend initialises
+        // as a normal page on top of the preview.
+        add_action( 'template_redirect', array( $this, 'swap_to_parent_query' ), 999 );
+        add_action( 'wp_footer', array( $this, 'print_preview_fallback' ), 1 );
+    }
+
+    /**
+     * Switch the main query to the parent post, so the theme or the Elementor Pro Single
+     * template renders the real post around the area. The area's spot then prints the
+     * area's editable container (see render()).
+     *
+     * @return void
+     */
+    public function swap_to_parent_query() {
+        if ( ! $this->preview_area ) {
+            return;
+        }
+        $parent = get_post( $this->preview_area['parent'] );
+
         global $wp_query, $wp_the_query, $post;
         $wp_query     = new \WP_Query( array(
             'p'           => $parent->ID,
@@ -496,8 +514,6 @@ class Ems_Areas_Manager {
         $wp_the_query = $wp_query;
         $post         = $parent;
         setup_postdata( $parent );
-
-        add_action( 'wp_footer', array( $this, 'print_preview_fallback' ), 1 );
     }
 
     /**

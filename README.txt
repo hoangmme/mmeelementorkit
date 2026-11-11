@@ -4,7 +4,7 @@ Plugin URI: https://mme.vn
 Tags: elementor, templates, template library, acf, scf
 Requires at least: 5.5
 Requires PHP: 7.2
-Stable tag: 1.4.1
+Stable tag: 1.4.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -25,6 +25,9 @@ Site Master và Client đều cần cài plugin này cùng Elementor.
 Phát triển dựa trên "Elements Share for Elementor" của DivDojo (GPL-2.0+).
 
 == Changelog ==
+
+= 1.4.2 =
+* Fix: "The preview could not be loaded (error 500)" when editing an area. The switch to the parent post's layout now happens after Elementor has finished setting up the preview.
 
 = 1.4.1 =
 * Fix: "Edit Bottom with Elementor" opened a blank page. The area is now edited inside the post's real layout (theme or Elementor Pro Single template), with the main content shown around it, like editing the_content.
