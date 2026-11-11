@@ -51,6 +51,13 @@ class Ems_Areas_Manager {
     private $preview_printed = false;
 
     /**
+     * Main queries of an area preview: array( 'area' => WP_Query, 'parent' => WP_Query ).
+     *
+     * @var array
+     */
+    private $preview_queries = array();
+
+    /**
      * Errors caught while building the area preview, shown in the preview-debug output.
      *
      * @var \Throwable[]
@@ -546,14 +553,18 @@ class Ems_Areas_Manager {
     }
 
     /**
-     * Switch the main query to the parent post, so the theme or the Elementor Pro Single
-     * template renders the real post around the area. The area's spot then prints the
-     * area's editable container (see render()).
+     * Render the real parent post around the area being edited.
      *
-     * The current post ($post, get_the_ID()) stays the area until wp_head is done:
-     * Elementor decides "preview mode" by comparing it with ?elementor-preview, and while
-     * enqueueing assets in wp_head some widgets (e.g. Code Highlight) only skip reading
-     * settings in preview mode.
+     * Elementor decides "preview mode" with get_the_ID() === ?elementor-preview, and some
+     * widgets (e.g. Code Highlight) read settings while assets are enqueued in wp_head
+     * unless in preview mode. Plugins also call wp_reset_postdata() in wp_head, which
+     * resets the current post from the main query. So the main query itself is switched
+     * per phase of the page:
+     *
+     *   template choice (template_include)  -> parent (the parent's layout is used)
+     *   wp_head                              -> area   (a normal Elementor preview)
+     *   page body                            -> parent (header, Single template, content)
+     *   wp_footer                            -> area
      *
      * @return void
      */
@@ -561,27 +572,42 @@ class Ems_Areas_Manager {
         if ( ! $this->preview_area ) {
             return;
         }
+        global $wp_query;
         $parent = get_post( $this->preview_area['parent'] );
 
-        global $wp_query, $wp_the_query;
-        $wp_query     = new \WP_Query( array(
-            'p'           => $parent->ID,
-            'post_type'   => $parent->post_type,
-            'post_status' => 'any',
-        ) );
-        $wp_the_query = $wp_query;
+        $this->preview_queries = array(
+            'area'   => $wp_query,
+            'parent' => new \WP_Query( array(
+                'p'           => $parent->ID,
+                'post_type'   => $parent->post_type,
+                'post_status' => 'any',
+            ) ),
+        );
 
+        $this->use_preview_query( 'parent' );
+        add_filter( 'template_include', array( $this, 'head_as_area' ), PHP_INT_MAX );
         add_action( 'wp_head', array( $this, 'enter_parent_post' ), PHP_INT_MAX );
         add_action( 'wp_footer', array( $this, 'leave_parent_post' ), 0 );
     }
 
     /**
-     * After wp_head: the page body (header, Single template, content) belongs to the parent.
+     * The template is chosen (from the parent): run wp_head as the area's preview.
+     *
+     * @param string $template
+     * @return string
+     */
+    public function head_as_area( $template ) {
+        $this->use_preview_query( 'area' );
+        return $template;
+    }
+
+    /**
+     * After wp_head: the page body belongs to the parent post.
      *
      * @return void
      */
     public function enter_parent_post() {
-        $this->set_current_post( $this->preview_area['parent'] );
+        $this->use_preview_query( 'parent' );
     }
 
     /**
@@ -590,18 +616,20 @@ class Ems_Areas_Manager {
      * @return void
      */
     public function leave_parent_post() {
-        $this->set_current_post( $this->preview_area['id'] );
+        $this->use_preview_query( 'area' );
     }
 
     /**
-     * Set the global post.
+     * Make the area's or the parent's query the main query and its post the current post.
      *
-     * @param int $post_id
+     * @param string $which 'area' or 'parent'.
      * @return void
      */
-    private function set_current_post( $post_id ) {
-        global $post;
-        $post = get_post( $post_id );
+    private function use_preview_query( $which ) {
+        global $wp_query, $wp_the_query, $post;
+        $wp_query     = $this->preview_queries[ $which ];
+        $wp_the_query = $wp_query;
+        $post         = get_post( 'parent' === $which ? $this->preview_area['parent'] : $this->preview_area['id'] );
         setup_postdata( $post );
     }
 
