@@ -4,7 +4,7 @@ Plugin URI: https://mme.vn
 Tags: elementor, templates, template library, acf, scf
 Requires at least: 5.5
 Requires PHP: 7.2
-Stable tag: 1.4.2
+Stable tag: 1.4.3
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -25,6 +25,10 @@ Site Master và Client đều cần cài plugin này cùng Elementor.
 Phát triển dựa trên "Elements Share for Elementor" của DivDojo (GPL-2.0+).
 
 == Changelog ==
+
+= 1.4.3 =
+* Fix: area preview no longer fails when Elementor cannot build the area's container attributes (TypeError in Controls_Stack::sanitize_settings); a minimal container is used instead.
+* New: when an area preview still fails, Elementor's "preview debug" link shows the full error and stack trace (PHP 7 otherwise cuts it at 1024 characters).
 
 = 1.4.2 =
 * Fix: "The preview could not be loaded (error 500)" when editing an area. The switch to the parent post's layout now happens after Elementor has finished setting up the preview.

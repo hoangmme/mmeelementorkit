@@ -51,6 +51,13 @@ class Ems_Areas_Manager {
     private $preview_printed = false;
 
     /**
+     * Errors caught while building the area preview, shown in the preview-debug output.
+     *
+     * @var \Throwable[]
+     */
+    private $preview_errors = array();
+
+    /**
      * Notice shown after saving settings: array( type, message ).
      *
      * @var array|null
@@ -458,12 +465,33 @@ class Ems_Areas_Manager {
      * @return string
      */
     private function editable_container() {
-        $document = \Elementor\Plugin::instance()->documents->get( $this->preview_area['id'] );
-        if ( ! $document ) {
-            return '';
+        $id = $this->preview_area['id'];
+
+        // What the editor needs to find and fill the container.
+        $attributes = array(
+            'class'                    => 'elementor elementor-' . $id,
+            'data-elementor-type'      => 'wp-post',
+            'data-elementor-id'        => $id,
+            'data-elementor-post-type' => self::POST_TYPE,
+        );
+
+        // Prefer Elementor's own attributes, but never let them break the preview.
+        try {
+            $document = \Elementor\Plugin::instance()->documents->get( $id );
+            if ( $document ) {
+                $attributes = $document->get_container_attributes();
+            }
+        } catch ( \Throwable $e ) {
+            $this->preview_errors[] = $e;
         }
+
+        $html = '';
+        foreach ( $attributes as $key => $value ) {
+            $html .= ' ' . esc_attr( $key ) . '="' . esc_attr( is_array( $value ) ? implode( ' ', $value ) : $value ) . '"';
+        }
+
         $this->preview_printed = true;
-        return '<div class="mme-area mme-area--' . esc_attr( $this->preview_area['name'] ) . '"><div ' . \Elementor\Utils::render_html_attributes( $document->get_container_attributes() ) . '></div></div>';
+        return '<div class="mme-area mme-area--' . esc_attr( $this->preview_area['name'] ) . '"><div' . $html . '></div></div>';
     }
 
     /**
@@ -490,6 +518,31 @@ class Ems_Areas_Manager {
         // as a normal page on top of the preview.
         add_action( 'template_redirect', array( $this, 'swap_to_parent_query' ), 999 );
         add_action( 'wp_footer', array( $this, 'print_preview_fallback' ), 1 );
+
+        // PHP 7 cuts fatal error messages at 1024 characters; print the whole trace instead.
+        set_exception_handler( array( $this, 'print_preview_exception' ) );
+    }
+
+    /**
+     * Uncaught errors during an area preview (only editors of the area get here):
+     * print the full message and stack trace, readable from Elementor's "preview debug" link.
+     *
+     * @param \Throwable $error
+     * @return void
+     */
+    public function print_preview_exception( $error ) {
+        if ( ! headers_sent() ) {
+            status_header( 500 );
+        }
+
+        $report = 'MMe Elementor Kit ' . EMS_ELEMENTS_SHARE_VERSION . ' — area preview error' . "\n\n";
+        foreach ( array_merge( $this->preview_errors, array( $error ) ) as $item ) {
+            $report .= get_class( $item ) . ': ' . $item->getMessage() . "\n"
+                . $item->getFile() . ':' . $item->getLine() . "\n\n"
+                . $item->getTraceAsString() . "\n\n";
+        }
+
+        echo '<pre style="white-space:pre-wrap;padding:16px;font:12px/1.5 monospace;background:#fff;color:#111">' . esc_html( $report ) . '</pre>';
     }
 
     /**
