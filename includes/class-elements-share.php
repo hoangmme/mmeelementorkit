@@ -79,6 +79,7 @@ class Ems_Elements_Share {
 		$this->define_admin_hooks();
 		$this->define_public_hooks();
 		$this->define_widget_hooks();
+		$this->define_area_hooks();
 
 	}
 
@@ -127,6 +128,12 @@ class Ems_Elements_Share {
 		 * The class responsible for registering the custom Elementor widgets.
 		 */
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'widgets/class-widgets-manager.php';
+
+		/**
+		 * The class responsible for extra Elementor areas per post, and its template functions.
+		 */
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'areas/class-areas-manager.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'areas/functions.php';
 
 		$this->loader = new Ems_Elements_Share_Loader();
 
@@ -192,6 +199,18 @@ class Ems_Elements_Share {
 	private function define_widget_hooks() {
 
 		new \Ems_Elements_Share\Widgets\Ems_Widgets_Manager();
+
+	}
+
+	/**
+	 * Register the extra Elementor areas per post (Bottom, ...).
+	 *
+	 * @since    1.4.0
+	 * @access   private
+	 */
+	private function define_area_hooks() {
+
+		\Ems_Elements_Share\Areas\Ems_Areas_Manager::get_instance();
 
 	}
 

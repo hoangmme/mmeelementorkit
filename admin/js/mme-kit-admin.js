@@ -238,6 +238,20 @@
 		});
 
 		/*
+		 * Areas page
+		 */
+		$(document).on('click', '.ems-add-area', function(){
+			var index = Date.now();
+			var html = $('#ems-area-row-template').html().replace(/__i__/g, index);
+			$('.ems-area-rows').append(html);
+			$('.ems-area-rows .ems-area-row:last input:first').trigger('focus');
+		});
+
+		$(document).on('click', '.ems-remove-area', function(){
+			$(this).closest('.ems-area-row').remove();
+		});
+
+		/*
 		 * Shared helpers
 		 */
 		$(document).on('click', '[data-ems-copy]', function(){

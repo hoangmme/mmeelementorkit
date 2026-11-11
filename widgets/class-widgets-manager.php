@@ -61,6 +61,16 @@ class Ems_Widgets_Manager {
                 'tags'        => array( __( 'No API key', 'mme-elementor-kit' ), __( 'ACF / SCF', 'mme-elementor-kit' ), __( 'Google Maps link', 'mme-elementor-kit' ) ),
                 'usage'       => __( 'Store the Google Maps link of each place in a field (e.g. "map"), then point the widget at that field.', 'mme-elementor-kit' ),
             ),
+            'post-area'  => array(
+                'class'       => __NAMESPACE__ . '\Ems_Post_Area_Widget',
+                'file'        => __DIR__ . '/post-area/class-post-area-widget.php',
+                'name'        => 'mme-post-area',
+                'title'       => __( 'Post Area', 'mme-elementor-kit' ),
+                'description' => __( 'Shows an extra Elementor area of the current post (e.g. "Bottom"), designed separately from the main content with its own "Edit with Elementor" button.', 'mme-elementor-kit' ),
+                'icon'        => 'dashicons-align-wide',
+                'tags'        => array( __( 'Single template', 'mme-elementor-kit' ), __( 'Areas', 'mme-elementor-kit' ) ),
+                'usage'       => __( 'Create areas in MMe Kit → Areas, then place this widget in your Single template where the area should appear.', 'mme-elementor-kit' ),
+            ),
         );
     }
 

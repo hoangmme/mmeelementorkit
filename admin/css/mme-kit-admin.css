@@ -961,6 +961,45 @@
 .ems-app .ems-text-green { color: var(--ems-green); }
 .ems-app .ems-text-muted { color: var(--ems-muted); }
 
+/* Areas */
+.ems-checks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+}
+
+.ems-checks label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.ems-area-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.ems-area-row {
+    display: grid;
+    grid-template-columns: 150px minmax(0, 1fr) 240px 34px;
+    gap: 8px;
+    align-items: center;
+}
+
+.ems-area-row--head {
+    color: var(--ems-muted);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.ems-meta code {
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+
 /* Remote template grid */
 .ems-template-grid {
     display: grid;
@@ -1031,6 +1070,14 @@
     .ems-stats,
     .ems-grid-2 {
         grid-template-columns: minmax(0, 1fr);
+    }
+
+    .ems-area-row {
+        grid-template-columns: minmax(0, 1fr) 34px;
+    }
+
+    .ems-area-row--head {
+        display: none;
     }
 
     .ems-card {

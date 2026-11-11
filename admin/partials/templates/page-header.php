@@ -1,6 +1,6 @@
 <?php
 /**
- * Shared header with the section switcher (Master / Client / Widgets / Updates).
+ * Shared header with the section switcher (Master / Client / Widgets / Areas / Updates).
  *
  * @var string $active_page Slug of the page being rendered.
  */
@@ -17,6 +17,10 @@ $ems_tabs = array(
     Ems_Elements_Share_Menu_Handler::WIDGETS_SLUG => array(
         'label' => __( 'Widgets', 'mme-elementor-kit' ),
         'icon'  => 'dashicons-screenoptions',
+    ),
+    Ems_Elements_Share_Menu_Handler::AREAS_SLUG => array(
+        'label' => __( 'Areas', 'mme-elementor-kit' ),
+        'icon'  => 'dashicons-align-wide',
     ),
 );
 if ( current_user_can( 'update_plugins' ) ) {
