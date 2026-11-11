@@ -4,7 +4,7 @@ Plugin URI: https://mme.vn
 Tags: elementor, templates, template library, acf, scf
 Requires at least: 5.5
 Requires PHP: 7.2
-Stable tag: 1.4.3
+Stable tag: 1.4.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -25,6 +25,9 @@ Site Master và Client đều cần cài plugin này cùng Elementor.
 Phát triển dựa trên "Elements Share for Elementor" của DivDojo (GPL-2.0+).
 
 == Changelog ==
+
+= 1.4.4 =
+* Fix: area preview error 500 (TypeError in Controls_Stack::sanitize_settings from the Code Highlight widget). The area now stays the current post while Elementor loads widget assets in wp_head; the page body switches to the parent post after wp_head.
 
 = 1.4.3 =
 * Fix: area preview no longer fails when Elementor cannot build the area's container attributes (TypeError in Controls_Stack::sanitize_settings); a minimal container is used instead.

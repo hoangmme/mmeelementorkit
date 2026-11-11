@@ -550,6 +550,11 @@ class Ems_Areas_Manager {
      * template renders the real post around the area. The area's spot then prints the
      * area's editable container (see render()).
      *
+     * The current post ($post, get_the_ID()) stays the area until wp_head is done:
+     * Elementor decides "preview mode" by comparing it with ?elementor-preview, and while
+     * enqueueing assets in wp_head some widgets (e.g. Code Highlight) only skip reading
+     * settings in preview mode.
+     *
      * @return void
      */
     public function swap_to_parent_query() {
@@ -558,15 +563,46 @@ class Ems_Areas_Manager {
         }
         $parent = get_post( $this->preview_area['parent'] );
 
-        global $wp_query, $wp_the_query, $post;
+        global $wp_query, $wp_the_query;
         $wp_query     = new \WP_Query( array(
             'p'           => $parent->ID,
             'post_type'   => $parent->post_type,
             'post_status' => 'any',
         ) );
         $wp_the_query = $wp_query;
-        $post         = $parent;
-        setup_postdata( $parent );
+
+        add_action( 'wp_head', array( $this, 'enter_parent_post' ), PHP_INT_MAX );
+        add_action( 'wp_footer', array( $this, 'leave_parent_post' ), 0 );
+    }
+
+    /**
+     * After wp_head: the page body (header, Single template, content) belongs to the parent.
+     *
+     * @return void
+     */
+    public function enter_parent_post() {
+        $this->set_current_post( $this->preview_area['parent'] );
+    }
+
+    /**
+     * Before wp_footer: back to the area, as in a normal Elementor preview.
+     *
+     * @return void
+     */
+    public function leave_parent_post() {
+        $this->set_current_post( $this->preview_area['id'] );
+    }
+
+    /**
+     * Set the global post.
+     *
+     * @param int $post_id
+     * @return void
+     */
+    private function set_current_post( $post_id ) {
+        global $post;
+        $post = get_post( $post_id );
+        setup_postdata( $post );
     }
 
     /**
