@@ -238,13 +238,36 @@
 		});
 
 		/*
-		 * Areas page
+		 * Widget settings dialogs
+		 */
+		function openDialog( id ) {
+			var dialog = document.getElementById( id );
+			if ( dialog && typeof dialog.showModal === 'function' && ! dialog.open ) {
+				dialog.showModal();
+			}
+		}
+
+		$(document).on('click', '[data-ems-dialog]', function(){
+			openDialog( $(this).data('ems-dialog') );
+		});
+
+		$(document).on('click', '[data-ems-dialog-close]', function(){
+			$(this).closest('dialog')[0].close();
+		});
+
+		// Links such as admin.php?page=mme-elementor-kit-widgets#settings-post-area open that dialog.
+		if ( window.location.hash.indexOf('#settings-') === 0 ) {
+			openDialog( 'ems-' + window.location.hash.substr(1) );
+		}
+
+		/*
+		 * Area settings (Post Area widget)
 		 */
 		$(document).on('click', '.ems-add-area', function(){
-			var index = Date.now();
-			var html = $('#ems-area-row-template').html().replace(/__i__/g, index);
-			$('.ems-area-rows').append(html);
-			$('.ems-area-rows .ems-area-row:last input:first').trigger('focus');
+			var form = $(this).closest('form');
+			var html = form.find('.ems-area-row-template').html().replace(/__i__/g, Date.now());
+			form.find('.ems-area-rows').append(html);
+			form.find('.ems-area-rows .ems-area-row:last input:first').trigger('focus');
 		});
 
 		$(document).on('click', '.ems-remove-area', function(){

@@ -52,7 +52,7 @@ $environment = array(
                 <div class="ems-widget-grid">
                     <?php foreach ( $widgets as $widget_key => $widget ) : ?>
                         <?php $is_enabled = Ems_Widgets_Manager::is_enabled( $widget_key ); ?>
-                        <div class="ems-widget <?php echo $is_enabled ? '' : 'is-disabled'; ?>">
+                        <div class="ems-widget <?php echo $is_enabled ? '' : 'is-disabled'; ?>" id="widget-<?php echo esc_attr( $widget_key ); ?>">
                             <div class="ems-widget__head">
                                 <span class="ems-widget__icon dashicons <?php echo esc_attr( $widget['icon'] ); ?>"></span>
                                 <label class="ems-switch" title="<?php echo esc_attr__( 'Enable / disable', 'mme-elementor-kit' ); ?>">
@@ -67,10 +67,19 @@ $environment = array(
                                     <span class="ems-badge"><?php echo esc_html( $tag ); ?></span>
                                 <?php endforeach; ?>
                             </div>
+                            <?php if ( ! empty( $widget['summary'] ) ) : ?>
+                                <p class="ems-widget__summary"><?php echo esc_html( call_user_func( $widget['summary'] ) ); ?></p>
+                            <?php endif; ?>
                             <p class="ems-note">
                                 <span class="dashicons dashicons-lightbulb"></span>
                                 <?php echo esc_html( $widget['usage'] ); ?>
                             </p>
+                            <?php if ( ! empty( $widget['settings'] ) ) : ?>
+                                <button type="button" class="ems-btn ems-btn--ghost ems-btn--block ems-field" data-ems-dialog="ems-settings-<?php echo esc_attr( $widget_key ); ?>">
+                                    <span class="dashicons dashicons-admin-generic"></span>
+                                    <?php echo esc_html__( 'Settings', 'mme-elementor-kit' ); ?>
+                                </button>
+                            <?php endif; ?>
                         </div>
                     <?php endforeach; ?>
                 </div>
@@ -84,6 +93,36 @@ $environment = array(
                     </button>
                 </div>
             </form>
+
+            <?php // Settings dialogs live outside the on / off form: forms cannot be nested. ?>
+            <?php foreach ( $widgets as $widget_key => $widget ) : ?>
+                <?php if ( empty( $widget['settings'] ) ) { continue; } ?>
+                <dialog class="ems-dialog" id="ems-settings-<?php echo esc_attr( $widget_key ); ?>">
+                    <form action="" method="POST" class="ems-dialog__form">
+                        <div class="ems-dialog__header">
+                            <h2 class="ems-card__title">
+                                <?php
+                                /* translators: %s: widget name */
+                                printf( esc_html__( '%s settings', 'mme-elementor-kit' ), esc_html( $widget['title'] ) );
+                                ?>
+                            </h2>
+                            <button type="button" class="ems-icon-btn" data-ems-dialog-close title="<?php echo esc_attr__( 'Close', 'mme-elementor-kit' ); ?>">
+                                <span class="dashicons dashicons-no-alt"></span>
+                            </button>
+                        </div>
+                        <div class="ems-dialog__body">
+                            <?php call_user_func( $widget['settings'] ); ?>
+                        </div>
+                        <div class="ems-dialog__footer">
+                            <button type="button" class="ems-btn ems-btn--ghost" data-ems-dialog-close><?php echo esc_html__( 'Cancel', 'mme-elementor-kit' ); ?></button>
+                            <button type="submit" class="ems-btn ems-btn--primary">
+                                <span class="dashicons dashicons-saved"></span>
+                                <?php echo esc_html__( 'Save settings', 'mme-elementor-kit' ); ?>
+                            </button>
+                        </div>
+                    </form>
+                </dialog>
+            <?php endforeach; ?>
         </main>
 
         <aside class="ems-layout__aside">

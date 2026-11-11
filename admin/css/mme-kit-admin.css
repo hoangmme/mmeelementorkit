@@ -961,6 +961,58 @@
 .ems-app .ems-text-green { color: var(--ems-green); }
 .ems-app .ems-text-muted { color: var(--ems-muted); }
 
+/* Widget settings dialog */
+.ems-widget__summary {
+    margin: 10px 0 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ems-primary);
+}
+
+.ems-dialog {
+    width: min(760px, calc(100vw - 32px));
+    max-height: calc(100vh - 64px);
+    padding: 0;
+    color: var(--ems-text);
+    border: 0;
+    border-radius: var(--ems-radius);
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25);
+}
+
+.ems-dialog::backdrop {
+    background: rgba(15, 23, 42, 0.45);
+}
+
+.ems-dialog__form {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 64px);
+    margin: 0;
+}
+
+.ems-dialog__header,
+.ems-dialog__footer {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 24px;
+}
+
+.ems-dialog__header {
+    justify-content: space-between;
+    border-bottom: 1px solid var(--ems-border);
+}
+
+.ems-dialog__footer {
+    justify-content: flex-end;
+    border-top: 1px solid var(--ems-border);
+}
+
+.ems-dialog__body {
+    padding: 4px 24px 20px;
+    overflow-y: auto;
+}
+
 /* Areas */
 .ems-checks {
     display: flex;

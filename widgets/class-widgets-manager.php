@@ -69,7 +69,14 @@ class Ems_Widgets_Manager {
                 'description' => __( 'Shows an extra Elementor area of the current post (e.g. "Bottom"), designed separately from the main content with its own "Edit with Elementor" button.', 'mme-elementor-kit' ),
                 'icon'        => 'dashicons-align-wide',
                 'tags'        => array( __( 'Single template', 'mme-elementor-kit' ), __( 'Areas', 'mme-elementor-kit' ) ),
-                'usage'       => __( 'Create areas in MMe Kit → Areas, then place this widget in your Single template where the area should appear.', 'mme-elementor-kit' ),
+                'usage'       => __( 'Open a post and click "Edit Bottom with Elementor". Areas set to "Manual" appear where you place this widget.', 'mme-elementor-kit' ),
+                // Optional per widget: a Settings dialog on the Widgets page, and a summary line on the card.
+                'settings'    => function () {
+                    \Ems_Elements_Share\Areas\Ems_Areas_Manager::get_instance()->render_settings();
+                },
+                'summary'     => function () {
+                    return \Ems_Elements_Share\Areas\Ems_Areas_Manager::get_instance()->get_summary();
+                },
             ),
         );
     }

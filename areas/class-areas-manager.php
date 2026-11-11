@@ -37,6 +37,20 @@ class Ems_Areas_Manager {
     private $rendering = array();
 
     /**
+     * Area being edited in the Elementor preview: array( id, parent, name ), or null.
+     *
+     * @var array|null
+     */
+    private $preview_area = null;
+
+    /**
+     * Whether the editable container of $preview_area has been printed.
+     *
+     * @var boolean
+     */
+    private $preview_printed = false;
+
+    /**
      * Notice shown after saving settings: array( type, message ).
      *
      * @var array|null
@@ -64,9 +78,12 @@ class Ems_Areas_Manager {
         add_action( 'admin_post_mme_kit_remove_area', array( $this, 'handle_remove' ) );
         add_action( 'load-post.php', array( $this, 'redirect_area_edit_screen' ) );
 
+        // Edit an area inside its parent post's layout.
+        add_action( 'elementor/preview/init', array( $this, 'preview_in_parent_layout' ) );
+
         // Settings page.
         add_action( 'admin_init', array( $this, 'handle_settings_form' ) );
-        add_action( 'ems_elements_share_areas_notice', array( $this, 'add_notice' ) );
+        add_action( 'ems_elements_share_widgets_notice', array( $this, 'add_notice' ) );
     }
 
     public static function get_instance() {
@@ -117,6 +134,10 @@ class Ems_Areas_Manager {
      * @return boolean
      */
     public function supports( $post_type ) {
+        // Areas belong to the Post Area widget: switching the widget off switches them off.
+        if ( ! \Ems_Elements_Share\Widgets\Ems_Widgets_Manager::is_enabled( 'post-area' ) ) {
+            return false;
+        }
         $config = $this->get_config();
         return $post_type && in_array( $post_type, $config['post_types'], true ) && count( $config['areas'] );
     }
@@ -169,6 +190,41 @@ class Ems_Areas_Manager {
 
         update_option( self::OPTION, array( 'post_types' => $post_types, 'areas' => $areas ) );
         $this->notice = array( 'success', __( 'Areas saved.', 'mme-elementor-kit' ) );
+    }
+
+    /**
+     * Settings form fields, for the Post Area widget's Settings dialog.
+     *
+     * @return void
+     */
+    public function render_settings() {
+        $config     = $this->get_config();
+        $post_types = $this->get_available_post_types();
+        require __DIR__ . '/settings-fields.php';
+    }
+
+    /**
+     * One line summary of the settings, for the widget card.
+     *
+     * @return string
+     */
+    public function get_summary() {
+        $config = $this->get_config();
+        if ( ! count( $config['areas'] ) || ! count( $config['post_types'] ) ) {
+            return __( 'No areas yet — open Settings to add one.', 'mme-elementor-kit' );
+        }
+
+        $areas = array();
+        foreach ( $config['areas'] as $area ) {
+            $areas[] = $area['label'] . ( 'manual' === $area['mode'] ? ' (' . __( 'manual', 'mme-elementor-kit' ) . ')' : '' );
+        }
+        $types = array();
+        foreach ( $config['post_types'] as $type ) {
+            $object  = get_post_type_object( $type );
+            $types[] = $object ? $object->labels->name : $type;
+        }
+        /* translators: 1: area labels, 2: post type names */
+        return sprintf( __( 'Areas: %1$s · on %2$s', 'mme-elementor-kit' ), implode( ', ', $areas ), implode( ', ', $types ) );
     }
 
     /**
@@ -275,8 +331,6 @@ class Ems_Areas_Manager {
                 '_mme_area_name'          => $area,
                 '_elementor_edit_mode'    => 'builder',
                 '_elementor_template_type' => 'wp-post',
-                // Full width canvas in the editor, the area renders inside the parent's layout anyway.
-                '_wp_page_template'       => 'elementor_canvas',
             ),
         ), true );
 
@@ -376,6 +430,12 @@ class Ems_Areas_Manager {
             return '';
         }
 
+        // Editing this area: print Elementor's editable container where the area belongs.
+        if ( $this->preview_area && (int) $post_id === $this->preview_area['parent'] && $area === $this->preview_area['name'] ) {
+            $this->rendered[ $key ] = true;
+            return $this->editable_container();
+        }
+
         $area_id = $this->get_area_id( $post_id, $area );
         if ( ! $area_id || isset( $this->rendering[ $area_id ] ) ) {
             return '';
@@ -390,6 +450,70 @@ class Ems_Areas_Manager {
             return '';
         }
         return '<div class="mme-area mme-area--' . esc_attr( $area ) . '">' . $html . '</div>';
+    }
+
+    /**
+     * Elementor's empty, editable container for the area being edited. The editor fills it.
+     *
+     * @return string
+     */
+    private function editable_container() {
+        $document = \Elementor\Plugin::instance()->documents->get( $this->preview_area['id'] );
+        if ( ! $document ) {
+            return '';
+        }
+        $this->preview_printed = true;
+        return '<div class="mme-area mme-area--' . esc_attr( $this->preview_area['name'] ) . '"><div ' . \Elementor\Utils::render_html_attributes( $document->get_container_attributes() ) . '></div></div>';
+    }
+
+    /**
+     * Elementor previews an area on its own (blank) url. Once Elementor has set up the
+     * preview for the area, switch the main query to the parent post so the theme or
+     * the Elementor Pro Single template renders the real post around it, with the
+     * area's editable container in place of the area.
+     *
+     * @return void
+     */
+    public function preview_in_parent_layout() {
+        $area = get_post( get_the_ID() );
+        if ( ! $area || self::POST_TYPE !== $area->post_type || ! $area->post_parent ) {
+            return;
+        }
+        $parent = get_post( $area->post_parent );
+        $name   = get_post_meta( $area->ID, '_mme_area_name', true );
+        if ( ! $parent || ! $name ) {
+            return;
+        }
+
+        $this->preview_area = array( 'id' => (int) $area->ID, 'parent' => (int) $parent->ID, 'name' => $name );
+
+        global $wp_query, $wp_the_query, $post;
+        $wp_query     = new \WP_Query( array(
+            'p'           => $parent->ID,
+            'post_type'   => $parent->post_type,
+            'post_status' => 'any',
+        ) );
+        $wp_the_query = $wp_query;
+        $post         = $parent;
+        setup_postdata( $parent );
+
+        add_action( 'wp_footer', array( $this, 'print_preview_fallback' ), 1 );
+    }
+
+    /**
+     * When the parent's layout never printed the area (e.g. a manual area that is not
+     * placed in the template), still give the editor a place to work, with a hint.
+     *
+     * @return void
+     */
+    public function print_preview_fallback() {
+        if ( ! $this->preview_area || $this->preview_printed ) {
+            return;
+        }
+        echo '<div style="max-width:1140px;margin:24px auto;padding:12px 16px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;font:14px/1.5 sans-serif">'
+            . esc_html__( 'This area is not placed in this post\'s layout yet, so it is shown here. Place the Post Area widget in your Single template, or set the area to show after the content.', 'mme-elementor-kit' )
+            . '</div>';
+        echo $this->editable_container(); // phpcs:ignore WordPress.Security.EscapeOutput -- Elementor attributes are escaped.
     }
 
     /**

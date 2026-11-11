@@ -11,7 +11,7 @@ if ( ! function_exists( 'mme_kit_area' ) ) {
 	/**
 	 * Print an extra Elementor area, e.g. mme_kit_area( 'bottom' ) after the_content().
 	 *
-	 * @param string   $name    Area name from MMe Kit → Areas.
+	 * @param string   $name    Area name from MMe Kit → Widgets → Post Area → Settings.
 	 * @param int|null $post_id Defaults to the current post.
 	 * @return void
 	 */

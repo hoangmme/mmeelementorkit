@@ -57,7 +57,7 @@ class Ems_Post_Area_Widget extends Widget_Base {
         } else {
             $this->add_control( 'no_areas', array(
                 'type'            => Controls_Manager::RAW_HTML,
-                'raw'             => esc_html__( 'No areas yet. Create one in MMe Kit → Areas.', 'mme-elementor-kit' ),
+                'raw'             => esc_html__( 'No areas yet. Add one in the widget settings below.', 'mme-elementor-kit' ),
                 'content_classes' => 'elementor-panel-alert elementor-panel-alert-warning',
             ) );
         }
@@ -69,9 +69,14 @@ class Ems_Post_Area_Widget extends Widget_Base {
             'description' => __( 'Only used inside the Elementor editor, to see the area of a real post while designing the template.', 'mme-elementor-kit' ),
         ) );
 
-        $this->add_control( 'mode_note', array(
+        $this->add_control( 'settings_link', array(
             'type'            => Controls_Manager::RAW_HTML,
-            'raw'             => esc_html__( 'Tip: set this area to "Manual" in MMe Kit → Areas so it only appears where this widget is placed.', 'mme-elementor-kit' ),
+            'raw'             => sprintf(
+                '%s <a href="%s" target="_blank">%s</a>',
+                esc_html__( 'Set the area to "Manual" so it only appears where this widget is placed.', 'mme-elementor-kit' ),
+                esc_url( admin_url( 'admin.php?page=' . \Ems_Elements_Share_Menu_Handler::WIDGETS_SLUG . '#settings-post-area' ) ),
+                esc_html__( 'Area settings ↗', 'mme-elementor-kit' )
+            ),
             'content_classes' => 'elementor-descriptor',
         ) );
 

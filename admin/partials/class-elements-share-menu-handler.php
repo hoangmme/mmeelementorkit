@@ -32,11 +32,6 @@ class Ems_Elements_Share_Menu_Handler {
 	const UPDATES_SLUG = 'mme-elementor-kit-updates';
 
 	/**
-	 * Slug of the areas page.
-	 */
-	const AREAS_SLUG = 'mme-elementor-kit-areas';
-
-	/**
 	 * Register all menu items.
 	 *
 	 * @return void
@@ -50,7 +45,6 @@ class Ems_Elements_Share_Menu_Handler {
 		add_submenu_page( self::MASTER_SLUG, __( 'Master (Server)', 'mme-elementor-kit' ), __( 'Master (Server)', 'mme-elementor-kit' ), $capability, self::MASTER_SLUG, array( $this, 'render_master_page' ) );
 		add_submenu_page( self::MASTER_SLUG, __( 'Client', 'mme-elementor-kit' ), __( 'Client', 'mme-elementor-kit' ), $capability, self::CLIENT_SLUG, array( $this, 'render_client_page' ) );
 		add_submenu_page( self::MASTER_SLUG, __( 'Widgets', 'mme-elementor-kit' ), __( 'Widgets', 'mme-elementor-kit' ), $capability, self::WIDGETS_SLUG, array( $this, 'render_widgets_page' ) );
-		add_submenu_page( self::MASTER_SLUG, __( 'Areas', 'mme-elementor-kit' ), __( 'Areas', 'mme-elementor-kit' ), $capability, self::AREAS_SLUG, array( $this, 'render_areas_page' ) );
 
 		$update_count = Ems_Updater::get_instance()->has_update( false ) ? ' <span class="update-plugins count-1"><span class="plugin-count">1</span></span>' : '';
 		add_submenu_page( self::MASTER_SLUG, __( 'Updates', 'mme-elementor-kit' ), __( 'Updates', 'mme-elementor-kit' ) . $update_count, 'update_plugins', self::UPDATES_SLUG, array( $this, 'render_updates_page' ) );
@@ -62,7 +56,7 @@ class Ems_Elements_Share_Menu_Handler {
 	 * @return boolean
 	 */
 	public static function is_plugin_page() {
-		return isset( $_GET['page'] ) && in_array( $_GET['page'], array( self::MASTER_SLUG, self::CLIENT_SLUG, self::WIDGETS_SLUG, self::AREAS_SLUG, self::UPDATES_SLUG ), true );
+		return isset( $_GET['page'] ) && in_array( $_GET['page'], array( self::MASTER_SLUG, self::CLIENT_SLUG, self::WIDGETS_SLUG, self::UPDATES_SLUG ), true );
 	}
 
 	/**
@@ -103,17 +97,6 @@ class Ems_Elements_Share_Menu_Handler {
 	public function render_widgets_page() {
 		$active_page = self::WIDGETS_SLUG;
 		require_once __DIR__ . '/templates/widgets-page.php';
-	}
-
-	/**
-	 * Output the areas page.
-	 *
-	 * @return void
-	 */
-	public function render_areas_page() {
-		$areas_manager = Ems_Elements_Share\Areas\Ems_Areas_Manager::get_instance();
-		$active_page   = self::AREAS_SLUG;
-		require_once __DIR__ . '/templates/areas-page.php';
 	}
 
 	/**
