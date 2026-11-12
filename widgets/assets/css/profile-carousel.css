@@ -1,0 +1,509 @@
+/**
+ * MMe Profile Carousel widget.
+ * Defaults only — every value here can be overridden from the widget's Style tab.
+ */
+.mme-pc {
+  --mme-pc-accent: #0b4fa0;
+  --mme-pc-ring: var(--mme-pc-accent);
+  --mme-pc-arrow: var(--mme-pc-accent);
+  --mme-pc-media: 42%;
+  --mme-pc-gap: 64px;
+  --mme-pc-nav-space: 48px;
+  --mme-pc-per-view: 4;
+  --mme-pc-thumb: 96px;
+  --mme-pc-thumb-radius: 50%;
+  --mme-pc-thumb-gap: 16px;
+  --mme-pc-dim: 0.55;
+  --mme-pc-arrow-size: 44px;
+  --mme-pc-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  position: relative;
+  isolation: isolate;
+}
+
+/* Background word */
+.mme-pc__watermark {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+}
+
+.mme-pc__watermark span {
+  color: var(--mme-pc-accent);
+  opacity: 0.05;
+  font-size: clamp(96px, 20vw, 280px);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  white-space: nowrap;
+}
+
+/* Stage: every slide sits in the same grid cell, so the height is the tallest slide and nothing jumps */
+.mme-pc__stage {
+  position: relative;
+  display: grid;
+  /* Slides waiting off to the side must not widen the page */
+  overflow-x: clip;
+}
+
+.mme-pc__slide {
+  grid-area: 1 / 1;
+  display: grid;
+  grid-template-columns: var(--mme-pc-media) minmax(0, 1fr);
+  gap: var(--mme-pc-gap);
+  align-items: center;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(var(--mme-pc-shift, 0));
+  /* Leaving: quick fade out, so old and new text never overlap for long */
+  transition: opacity 0.25s ease, transform 0.4s var(--mme-pc-ease), visibility 0s linear 0.4s;
+}
+
+.mme-pc--slide .mme-pc__slide {
+  --mme-pc-shift: 32px;
+}
+
+.mme-pc--slide .mme-pc__slide.is-leaving,
+.mme-pc--slide[data-dir="prev"] .mme-pc__slide {
+  --mme-pc-shift: -32px;
+}
+
+.mme-pc--slide[data-dir="prev"] .mme-pc__slide.is-leaving {
+  --mme-pc-shift: 32px;
+}
+
+.mme-pc__slide.is-active {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition: opacity 0.45s var(--mme-pc-ease) 0.12s, transform 0.6s var(--mme-pc-ease) 0.12s, visibility 0s;
+}
+
+/* No image: text takes the full width */
+.mme-pc .mme-pc__slide--no-media {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.mme-pc--media-right .mme-pc__slide {
+  grid-template-columns: minmax(0, 1fr) var(--mme-pc-media);
+}
+
+.mme-pc--media-right .mme-pc__media {
+  order: 2;
+}
+
+.mme-pc__media {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 1 / 1;
+  border-radius: 20px;
+  background: #eef2f7;
+  box-shadow: 0 24px 48px -24px rgba(15, 23, 42, 0.35);
+}
+
+.mme-pc .mme-pc__media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  object-fit: cover;
+  border-radius: 0;
+  transform: scale(1.04);
+  transition: transform 1.2s var(--mme-pc-ease);
+}
+
+.mme-pc__slide.is-active .mme-pc__media img {
+  transform: none;
+}
+
+/* Text: comes in slightly after the image */
+.mme-pc__body > * {
+  transform: translateY(12px);
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.mme-pc__slide.is-active .mme-pc__body > * {
+  transform: none;
+  opacity: 1;
+  transition: opacity 0.5s var(--mme-pc-ease) 0.15s, transform 0.5s var(--mme-pc-ease) 0.15s;
+}
+
+.mme-pc__slide.is-active .mme-pc__body > :nth-child(2) { transition-delay: 0.2s; }
+.mme-pc__slide.is-active .mme-pc__body > :nth-child(3) { transition-delay: 0.25s; }
+.mme-pc__slide.is-active .mme-pc__body > :nth-child(4) { transition-delay: 0.3s; }
+.mme-pc__slide.is-active .mme-pc__body > :nth-child(5) { transition-delay: 0.35s; }
+
+.mme-pc__counter {
+  display: block;
+  margin-bottom: 14px;
+  color: var(--mme-pc-accent);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  font-variant-numeric: tabular-nums;
+}
+
+.mme-pc__counter span {
+  opacity: 0.45;
+  font-weight: 500;
+}
+
+.mme-pc .mme-pc__name {
+  margin: 0;
+  color: #0f172a;
+  font-size: clamp(26px, 3vw, 36px);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.mme-pc .mme-pc__role {
+  margin: 8px 0 0;
+  color: var(--mme-pc-accent);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.mme-pc__bio {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(15, 23, 42, 0.1);
+  color: #475569;
+  font-size: 16px;
+  line-height: 1.75;
+}
+
+.mme-pc__bio > :first-child {
+  margin-top: 0;
+}
+
+.mme-pc__bio > :last-child {
+  margin-bottom: 0;
+}
+
+.mme-pc__bio p {
+  margin: 0 0 12px;
+}
+
+.mme-pc__bio ul {
+  margin: 0 0 12px;
+  padding-left: 1.2em;
+}
+
+.mme-pc__bio li {
+  margin-bottom: 4px;
+}
+
+.mme-pc__bio li::marker {
+  color: var(--mme-pc-accent);
+}
+
+.mme-pc .mme-pc__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 28px;
+  padding: 14px 26px;
+  color: #fff;
+  background-color: var(--mme-pc-accent);
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-decoration: none;
+  transition: background-color 0.2s, color 0.2s, box-shadow 0.2s, transform 0.2s;
+}
+
+.mme-pc .mme-pc__btn:hover {
+  color: #fff;
+  box-shadow: 0 10px 24px -10px var(--mme-pc-accent);
+  transform: translateY(-1px);
+}
+
+.mme-pc__btn svg {
+  transition: transform 0.2s;
+}
+
+.mme-pc__btn:hover svg {
+  transform: translateX(3px);
+}
+
+/* Autoplay progress */
+.mme-pc__progress {
+  height: 2px;
+  margin-top: var(--mme-pc-nav-space);
+  overflow: hidden;
+  background: rgba(15, 23, 42, 0.08);
+  border-radius: 2px;
+}
+
+.mme-pc__progress span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--mme-pc-accent);
+  transform: scaleX(0);
+  transform-origin: left;
+}
+
+.mme-pc__progress + .mme-pc__nav {
+  margin-top: 24px;
+}
+
+/* Navigation: arrows + thumbnails */
+.mme-pc__nav {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: var(--mme-pc-nav-space);
+}
+
+.mme-pc__thumbs,
+.mme-pc__spacer {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.mme-pc__thumbs {
+  display: flex;
+  gap: var(--mme-pc-thumb-gap);
+  padding: 8px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+  /* Soft edges hint that the strip scrolls */
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 12px, #000 calc(100% - 12px), transparent);
+  mask-image: linear-gradient(to right, transparent, #000 12px, #000 calc(100% - 12px), transparent);
+}
+
+.mme-pc__thumbs::-webkit-scrollbar {
+  display: none;
+}
+
+/* Theme button styles (e.g. Hello Elementor) are reset here */
+.mme-pc .mme-pc__thumb,
+.mme-pc .mme-pc__thumb:hover,
+.mme-pc .mme-pc__thumb:focus {
+  flex: 0 0 calc((100% - (var(--mme-pc-per-view) - 1) * var(--mme-pc-thumb-gap)) / var(--mme-pc-per-view));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  border-radius: 12px;
+  box-shadow: none;
+  font: inherit;
+  text-align: center;
+  text-transform: none;
+  white-space: normal;
+  cursor: pointer;
+  scroll-snap-align: center;
+}
+
+/* Center the strip when the thumbnails don't fill it, while keeping it scrollable when they do */
+.mme-pc__thumb:first-child {
+  margin-left: auto !important;
+}
+
+.mme-pc__thumb:last-child {
+  margin-right: auto !important;
+}
+
+.mme-pc__thumb:focus-visible {
+  outline: 2px solid var(--mme-pc-ring);
+  outline-offset: 4px;
+}
+
+.mme-pc__thumb-img {
+  display: block;
+  width: var(--mme-pc-thumb);
+  max-width: 100%;
+  aspect-ratio: 1 / 1;
+  margin-bottom: 8px;
+  overflow: hidden;
+  background: #eef2f7;
+  border-radius: var(--mme-pc-thumb-radius);
+  box-shadow: 0 0 0 3px #fff, 0 0 0 3px transparent;
+  opacity: var(--mme-pc-dim);
+  transition: opacity 0.3s, box-shadow 0.3s, transform 0.3s var(--mme-pc-ease), filter 0.3s;
+}
+
+.mme-pc .mme-pc__thumb-img img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  object-fit: cover;
+  border-radius: 0;
+}
+
+.mme-pc__thumb:hover .mme-pc__thumb-img {
+  opacity: 0.9;
+  transform: translateY(-2px);
+}
+
+.mme-pc__thumb.is-active .mme-pc__thumb-img {
+  opacity: 1;
+  box-shadow: 0 0 0 3px #fff, 0 0 0 5px var(--mme-pc-ring);
+  transform: none;
+}
+
+.mme-pc__thumb-name {
+  display: -webkit-box;
+  max-width: 100%;
+  overflow: hidden;
+  color: #64748b;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.35;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  transition: color 0.3s;
+}
+
+.mme-pc__thumb-role {
+  max-width: 100%;
+  overflow: hidden;
+  color: #94a3b8;
+  font-size: 13px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mme-pc__thumb.is-active .mme-pc__thumb-name,
+.mme-pc__thumb:hover .mme-pc__thumb-name {
+  color: #0f172a;
+}
+
+/* Arrows */
+.mme-pc .mme-pc__arrow,
+.mme-pc .mme-pc__arrow:focus {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--mme-pc-arrow-size);
+  height: var(--mme-pc-arrow-size);
+  margin: 0;
+  padding: 0;
+  color: var(--mme-pc-arrow);
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 50%;
+  box-shadow: 0 4px 12px -6px rgba(15, 23, 42, 0.25);
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s, opacity 0.2s;
+}
+
+.mme-pc .mme-pc__arrow:hover {
+  color: #fff;
+  background: var(--mme-pc-arrow);
+  border-color: var(--mme-pc-arrow);
+}
+
+.mme-pc__arrow:focus-visible {
+  outline: 2px solid var(--mme-pc-arrow);
+  outline-offset: 2px;
+}
+
+.mme-pc .mme-pc__arrow[disabled] {
+  opacity: 0.35;
+  cursor: default;
+  color: var(--mme-pc-arrow);
+  background: #fff;
+  border-color: rgba(15, 23, 42, 0.12);
+}
+
+.mme-pc__placeholder {
+  padding: 24px;
+  color: #64748b;
+  font-size: 14px;
+  text-align: center;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+}
+
+/* Tablet */
+@media (max-width: 1024px) {
+  .mme-pc {
+    --mme-pc-gap: 40px;
+    --mme-pc-thumb: 80px;
+    --mme-pc-per-view: 3.5;
+  }
+}
+
+/* Mobile: image above text */
+@media (max-width: 767px) {
+  .mme-pc {
+    --mme-pc-gap: 24px;
+    --mme-pc-nav-space: 32px;
+    --mme-pc-thumb: 68px;
+    --mme-pc-thumb-gap: 12px;
+    --mme-pc-arrow-size: 38px;
+    --mme-pc-per-view: 2.5;
+  }
+
+  .mme-pc__slide,
+  .mme-pc--media-right .mme-pc__slide {
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+  }
+
+  /* Height follows the current slide (the script animates it), so short bios leave no gap */
+  .mme-pc__slide:not(.is-active) {
+    position: absolute;
+    inset: 0 0 auto 0;
+  }
+
+  .mme-pc__stage.is-resizing {
+    overflow: clip;
+  }
+
+  .mme-pc--media-right .mme-pc__media {
+    order: 0;
+  }
+
+  .mme-pc__media {
+    width: 100%;
+    max-width: 420px;
+    margin-inline: auto;
+  }
+
+  .mme-pc__nav {
+    gap: 8px;
+  }
+
+  .mme-pc__thumb-name {
+    font-size: 13px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mme-pc__slide,
+  .mme-pc__body > *,
+  .mme-pc .mme-pc__media img,
+  .mme-pc__thumb-img {
+    transition-duration: 0.01s !important;
+    transition-delay: 0s !important;
+    transform: none !important;
+  }
+
+  .mme-pc__thumbs {
+    scroll-behavior: auto;
+  }
+}

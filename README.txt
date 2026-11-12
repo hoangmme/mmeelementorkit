@@ -4,7 +4,7 @@ Plugin URI: https://mme.vn
 Tags: elementor, templates, template library, acf, scf
 Requires at least: 5.5
 Requires PHP: 7.2
-Stable tag: 1.4.5
+Stable tag: 1.5.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -15,6 +15,7 @@ Bộ công cụ Elementor của MMe.vn: chia sẻ template Master → Client và
 * Master (Server): chỉ mở khi có mã kích hoạt do MMe.vn cấp cho đúng tên miền. Tạo secret key, chọn template / danh mục được chia sẻ và giới hạn số site cho mỗi key.
 * Client: kết nối tới site Master bằng URL + secret key, chèn template từ tab "MMe Library" trong thư viện Elementor.
 * Areas: thêm vùng Elementor thứ 2 (vd. "Bottom") cho mỗi bài, có nút "Edit Bottom with Elementor" riêng; hiện tự động sau the_content() hoặc qua widget Post Area / shortcode [mme_area name="bottom"].
+* MMe Widgets: "Profile Carousel" — slide lớn (ảnh + tên, chức vụ, mô tả, nút) và dải ảnh nhỏ bên dưới để chuyển người; nhập tay hoặc lấy từ bài viết / CPT (ảnh đại diện, tiêu đề, field ACF).
 * MMe Widgets: "Map (no API key)" — bản đồ Google từ địa chỉ, toạ độ, link Google Maps (kể cả maps.app.goo.gl) hoặc field ACF Google Map / Link.
 * MMe Widgets: "Info Table (ACF)" — bảng thông tin label / giá trị lấy từ field ACF/SCF, post meta, shortcode hoặc dynamic tag.
 
@@ -25,6 +26,9 @@ Site Master và Client đều cần cài plugin này cùng Elementor.
 Phát triển dựa trên "Elements Share for Elementor" của DivDojo (GPL-2.0+).
 
 == Changelog ==
+
+= 1.5.0 =
+* New: "Profile Carousel" widget — a large slide (image beside name, role, description and button) with a thumbnail strip (image + name) below. Manual items or posts of any post type (featured image, title, ACF / SCF role and description fields). Swipe, arrow keys, arrows, loop, autoplay with progress bar (paused on hover, focus, off screen and in the editor), slide counter, background word, image left / right, full Style tab. No extra JS libraries.
 
 = 1.4.5 =
 * Fix: area preview still failed (Code Highlight TypeError) when a plugin called wp_reset_postdata() in wp_head. The main query itself now switches per page phase: parent for choosing the template, area during wp_head, parent for the page body, area in the footer.

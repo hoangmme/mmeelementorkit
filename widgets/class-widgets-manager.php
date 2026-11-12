@@ -61,6 +61,16 @@ class Ems_Widgets_Manager {
                 'tags'        => array( __( 'No API key', 'mme-elementor-kit' ), __( 'ACF / SCF', 'mme-elementor-kit' ), __( 'Google Maps link', 'mme-elementor-kit' ) ),
                 'usage'       => __( 'Store the Google Maps link of each place in a field (e.g. "map"), then point the widget at that field.', 'mme-elementor-kit' ),
             ),
+            'profile-carousel' => array(
+                'class'       => __NAMESPACE__ . '\Ems_Profile_Carousel_Widget',
+                'file'        => __DIR__ . '/profile-carousel/class-profile-carousel-widget.php',
+                'name'        => 'mme-profile-carousel',
+                'title'       => __( 'Profile Carousel', 'mme-elementor-kit' ),
+                'description' => __( 'One large slide (image beside name, role, description and button) with a thumbnail strip below to switch between people. Swipe, keyboard, autoplay with progress bar; no extra libraries.', 'mme-elementor-kit' ),
+                'icon'        => 'dashicons-groups',
+                'tags'        => array( __( 'Carousel', 'mme-elementor-kit' ), __( 'Team', 'mme-elementor-kit' ), __( 'ACF / SCF', 'mme-elementor-kit' ) ),
+                'usage'       => __( 'Add people as items, or pick "Posts" to build the slides from a post type (featured image, title, role field).', 'mme-elementor-kit' ),
+            ),
             'post-area'  => array(
                 'class'       => __NAMESPACE__ . '\Ems_Post_Area_Widget',
                 'file'        => __DIR__ . '/post-area/class-post-area-widget.php',
@@ -100,6 +110,7 @@ class Ems_Widgets_Manager {
     public function init() {
         add_action( 'elementor/elements/categories_registered', array( $this, 'register_category' ) );
         add_action( 'elementor/frontend/after_register_styles', array( $this, 'register_styles' ) );
+        add_action( 'elementor/frontend/after_register_scripts', array( $this, 'register_scripts' ) );
 
         // Elementor 3.5+ uses `register`, older versions `widgets_registered`.
         if ( version_compare( ELEMENTOR_VERSION, '3.5.0', '>=' ) ) {
@@ -130,6 +141,16 @@ class Ems_Widgets_Manager {
     public function register_styles() {
         wp_register_style( 'mme-info-table', EMS_ELEMENTS_SHARE_URL . 'widgets/assets/css/info-table.css', array(), EMS_ELEMENTS_SHARE_VERSION );
         wp_register_style( 'mme-map', EMS_ELEMENTS_SHARE_URL . 'widgets/assets/css/map.css', array(), EMS_ELEMENTS_SHARE_VERSION );
+        wp_register_style( 'mme-profile-carousel', EMS_ELEMENTS_SHARE_URL . 'widgets/assets/css/profile-carousel.css', array(), EMS_ELEMENTS_SHARE_VERSION );
+    }
+
+    /**
+     * Register widget scripts so widgets can declare them in get_script_depends().
+     *
+     * @return void
+     */
+    public function register_scripts() {
+        wp_register_script( 'mme-profile-carousel', EMS_ELEMENTS_SHARE_URL . 'widgets/assets/js/profile-carousel.js', array(), EMS_ELEMENTS_SHARE_VERSION, true );
     }
 
     /**
