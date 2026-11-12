@@ -4,7 +4,7 @@ Plugin URI: https://mme.vn
 Tags: elementor, templates, template library, acf, scf
 Requires at least: 5.5
 Requires PHP: 7.2
-Stable tag: 1.5.0
+Stable tag: 1.5.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -26,6 +26,9 @@ Site Master và Client đều cần cài plugin này cùng Elementor.
 Phát triển dựa trên "Elements Share for Elementor" của DivDojo (GPL-2.0+).
 
 == Changelog ==
+
+= 1.5.1 =
+* Fix: Profile Carousel declared the control "thumb_size" twice (thumbnail image size and thumbnail width). Elementor rejects the duplicate with a "Cannot redeclare control" notice, which can break the editor's widget render. The width control is now "thumb_width".
 
 = 1.5.0 =
 * New: "Profile Carousel" widget — a large slide (image beside name, role, description and button) with a thumbnail strip (image + name) below. Manual items or posts of any post type (featured image, title, ACF / SCF role and description fields). Swipe, arrow keys, arrows, loop, autoplay with progress bar (paused on hover, focus, off screen and in the editor), slide counter, background word, image left / right, full Style tab. No extra JS libraries.

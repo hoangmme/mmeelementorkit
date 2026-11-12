@@ -590,7 +590,7 @@ class Ems_Profile_Carousel_Widget extends Widget_Base {
             'condition' => array( 'show_thumbs' => 'yes' ),
         ) );
 
-        $this->add_responsive_control( 'thumb_size', array(
+        $this->add_responsive_control( 'thumb_width', array(
             'label'      => __( 'Image size', 'mme-elementor-kit' ),
             'type'       => Controls_Manager::SLIDER,
             'size_units' => array( 'px' ),
