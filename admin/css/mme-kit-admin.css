@@ -618,7 +618,7 @@
     counter-reset: ems-step;
 }
 
-.ems-steps li {
+.ems-steps > li {
     position: relative;
     margin: 0 0 12px;
     padding-left: 36px;
@@ -626,7 +626,7 @@
     counter-increment: ems-step;
 }
 
-.ems-steps li::before {
+.ems-steps > li::before {
     content: counter(ems-step);
     position: absolute;
     top: 0;
@@ -1140,4 +1140,43 @@
         margin: 20px -18px -18px;
         padding: 14px 18px;
     }
+}
+
+/* MCP page: error log */
+.ems-log {
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ems-log__item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 0;
+  border-top: 1px solid var(--ems-border);
+}
+
+.ems-log__meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ems-muted);
+  font-size: 12px;
+}
+
+.ems-log__message {
+  font-size: 13px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.ems-log__file {
+  font-size: 11px;
+  word-break: break-all;
+}
+
+.ems-app--mcp textarea.ems-input {
+  min-height: 92px;
+  resize: vertical;
 }

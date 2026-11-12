@@ -1,6 +1,6 @@
 <?php
 /**
- * Shared header with the section switcher (Master / Client / Widgets / Updates).
+ * Shared header with the section switcher (Master / Client / Widgets / Updates / MCP).
  *
  * @var string $active_page Slug of the page being rendered.
  */
@@ -26,6 +26,10 @@ if ( current_user_can( 'update_plugins' ) ) {
         'badge' => Ems_Elements_Share\Admin\Ems_Updater::get_instance()->has_update( false ),
     );
 }
+$ems_tabs[ Ems_Elements_Share_Menu_Handler::MCP_SLUG ] = array(
+    'label' => __( 'MCP & Logs', 'mme-elementor-kit' ),
+    'icon'  => 'dashicons-rest-api',
+);
 ?>
 <header class="ems-header">
     <div class="ems-header__brand">

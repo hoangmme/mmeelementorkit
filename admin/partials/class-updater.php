@@ -84,7 +84,9 @@ class Ems_Updater {
             return $cached;
         }
 
-        $response = wp_remote_get( $this->raw_url( basename( EMS_ELEMENTS_SHARE_BASENAME ) ), array( 'timeout' => 15 ) );
+        // A forced check skips GitHub's raw file cache (about 5 minutes) with a unique query string.
+        $bust     = $force ? '?t=' . time() : '';
+        $response = wp_remote_get( $this->raw_url( basename( EMS_ELEMENTS_SHARE_BASENAME ) ) . $bust, array( 'timeout' => 15 ) );
         $code     = is_wp_error( $response ) ? 0 : (int) wp_remote_retrieve_response_code( $response );
         $headers  = 200 === $code ? $this->parse_headers( wp_remote_retrieve_body( $response ) ) : array();
 
@@ -102,7 +104,7 @@ class Ems_Updater {
             return $info;
         }
 
-        $readme = wp_remote_get( $this->raw_url( 'README.txt' ), array( 'timeout' => 15 ) );
+        $readme = wp_remote_get( $this->raw_url( 'README.txt' ) . $bust, array( 'timeout' => 15 ) );
 
         $info = array(
             'version'      => $headers['Version'],
@@ -193,6 +195,74 @@ class Ems_Updater {
     public function get_update_url() {
         $plugin = EMS_ELEMENTS_SHARE_BASENAME;
         return wp_nonce_url( self_admin_url( 'update.php?action=upgrade-plugin&plugin=' . rawurlencode( $plugin ) ), 'upgrade-plugin_' . $plugin );
+    }
+
+    /**
+     * Install the latest version from GitHub right away (used by the MCP "update-plugin" ability).
+     *
+     * @return array|\WP_Error { updated, from, to, messages }
+     */
+    public function upgrade_now() {
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+        require_once ABSPATH . 'wp-admin/includes/misc.php';
+        require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+
+        $info = $this->get_remote_info( true );
+        if ( ! empty( $info['error'] ) ) {
+            return new \WP_Error( 'mme_kit_update_check_failed', $info['error'] );
+        }
+        if ( ! version_compare( $info['version'], EMS_ELEMENTS_SHARE_VERSION, '>' ) ) {
+            return array( 'updated' => false, 'from' => EMS_ELEMENTS_SHARE_VERSION, 'to' => EMS_ELEMENTS_SHARE_VERSION, 'messages' => array( __( 'Already on the latest version.', 'mme-elementor-kit' ) ) );
+        }
+        if ( 'direct' !== get_filesystem_method() ) {
+            return new \WP_Error( 'mme_kit_filesystem', __( 'WordPress needs FTP credentials to write plugin files on this server, so it cannot update without a person. Update from MMe Kit → Updates instead.', 'mme-elementor-kit' ) );
+        }
+
+        // Put the package in WordPress' update list (inject_update runs on this save).
+        $transient = get_site_transient( 'update_plugins' );
+        if ( ! is_object( $transient ) ) {
+            $transient = new \stdClass();
+        }
+        if ( empty( $transient->checked ) || ! is_array( $transient->checked ) ) {
+            $transient->checked = array();
+        }
+        $transient->checked[ EMS_ELEMENTS_SHARE_BASENAME ] = EMS_ELEMENTS_SHARE_VERSION;
+        set_site_transient( 'update_plugins', $transient );
+
+        $was_active = is_plugin_active( EMS_ELEMENTS_SHARE_BASENAME );
+        $skin       = new \WP_Ajax_Upgrader_Skin();
+        $upgrader   = new \Plugin_Upgrader( $skin );
+        $result     = $upgrader->upgrade( EMS_ELEMENTS_SHARE_BASENAME );
+
+        if ( is_wp_error( $result ) ) {
+            return $result;
+        }
+        if ( is_wp_error( $skin->result ) ) {
+            return $skin->result;
+        }
+        if ( $skin->get_errors()->has_errors() ) {
+            return $skin->get_errors();
+        }
+        if ( ! $result ) {
+            return new \WP_Error( 'mme_kit_update_failed', __( 'The update did not run.', 'mme-elementor-kit' ), $skin->get_upgrade_messages() );
+        }
+
+        // Older WordPress versions leave the plugin deactivated after an upgrade outside the update screen.
+        if ( $was_active && ! is_plugin_active( EMS_ELEMENTS_SHARE_BASENAME ) ) {
+            activate_plugin( EMS_ELEMENTS_SHARE_BASENAME, '', false, true );
+        }
+
+        $data = get_plugin_data( WP_PLUGIN_DIR . '/' . EMS_ELEMENTS_SHARE_BASENAME, false, false );
+        return array(
+            'updated'  => true,
+            'from'     => EMS_ELEMENTS_SHARE_VERSION,
+            'to'       => $data['Version'],
+            'active'   => is_plugin_active( EMS_ELEMENTS_SHARE_BASENAME ),
+            'messages' => array_values( array_map( function ( $message ) {
+                return html_entity_decode( wp_strip_all_tags( $message ), ENT_QUOTES, 'UTF-8' );
+            }, $skin->get_upgrade_messages() ) ),
+        );
     }
 
     /**

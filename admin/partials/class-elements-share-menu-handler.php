@@ -32,6 +32,11 @@ class Ems_Elements_Share_Menu_Handler {
 	const UPDATES_SLUG = 'mme-elementor-kit-updates';
 
 	/**
+	 * Slug of the MCP (AI connection and error log) page.
+	 */
+	const MCP_SLUG = 'mme-elementor-kit-mcp';
+
+	/**
 	 * Register all menu items.
 	 *
 	 * @return void
@@ -48,6 +53,7 @@ class Ems_Elements_Share_Menu_Handler {
 
 		$update_count = Ems_Updater::get_instance()->has_update( false ) ? ' <span class="update-plugins count-1"><span class="plugin-count">1</span></span>' : '';
 		add_submenu_page( self::MASTER_SLUG, __( 'Updates', 'mme-elementor-kit' ), __( 'Updates', 'mme-elementor-kit' ) . $update_count, 'update_plugins', self::UPDATES_SLUG, array( $this, 'render_updates_page' ) );
+		add_submenu_page( self::MASTER_SLUG, __( 'MCP & Logs', 'mme-elementor-kit' ), __( 'MCP & Logs', 'mme-elementor-kit' ), $capability, self::MCP_SLUG, array( $this, 'render_mcp_page' ) );
 	}
 
 	/**
@@ -56,7 +62,7 @@ class Ems_Elements_Share_Menu_Handler {
 	 * @return boolean
 	 */
 	public static function is_plugin_page() {
-		return isset( $_GET['page'] ) && in_array( $_GET['page'], array( self::MASTER_SLUG, self::CLIENT_SLUG, self::WIDGETS_SLUG, self::UPDATES_SLUG ), true );
+		return isset( $_GET['page'] ) && in_array( $_GET['page'], array( self::MASTER_SLUG, self::CLIENT_SLUG, self::WIDGETS_SLUG, self::UPDATES_SLUG, self::MCP_SLUG ), true );
 	}
 
 	/**
@@ -108,5 +114,15 @@ class Ems_Elements_Share_Menu_Handler {
 		$updater     = Ems_Updater::get_instance();
 		$active_page = self::UPDATES_SLUG;
 		require_once __DIR__ . '/templates/updates-page.php';
+	}
+
+	/**
+	 * Output the MCP page.
+	 *
+	 * @return void
+	 */
+	public function render_mcp_page() {
+		$active_page = self::MCP_SLUG;
+		require_once __DIR__ . '/templates/mcp-page.php';
 	}
 }

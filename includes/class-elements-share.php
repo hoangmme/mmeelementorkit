@@ -75,6 +75,7 @@ class Ems_Elements_Share {
 		$this->plugin_name = 'mme-elementor-kit';
 
 		$this->load_dependencies();
+		$this->define_mcp_hooks();
 		$this->set_locale();
 		$this->define_admin_hooks();
 		$this->define_public_hooks();
@@ -134,6 +135,12 @@ class Ems_Elements_Share {
 		 */
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'areas/class-areas-manager.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'areas/functions.php';
+
+		/**
+		 * Error log (no wp-config.php needed) and the MCP abilities (Abilities API, WordPress 6.9+).
+		 */
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/mcp/class-debug-log.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/mcp/class-mcp-abilities.php';
 
 		$this->loader = new Ems_Elements_Share_Loader();
 
@@ -199,6 +206,20 @@ class Ems_Elements_Share {
 	private function define_widget_hooks() {
 
 		new \Ems_Elements_Share\Widgets\Ems_Widgets_Manager();
+
+	}
+
+	/**
+	 * Start the error log and register the MCP abilities.
+	 *
+	 * @since    1.6.0
+	 * @access   private
+	 */
+	private function define_mcp_hooks() {
+
+		// First, so errors raised while the rest of the plugin loads are recorded too.
+		\Ems_Elements_Share\Mcp\Ems_Debug_Log::get_instance();
+		\Ems_Elements_Share\Mcp\Ems_Mcp_Abilities::get_instance();
 
 	}
 

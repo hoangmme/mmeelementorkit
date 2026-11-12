@@ -4,7 +4,7 @@ Plugin URI: https://mme.vn
 Tags: elementor, templates, template library, acf, scf
 Requires at least: 5.5
 Requires PHP: 7.2
-Stable tag: 1.5.1
+Stable tag: 1.6.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -18,6 +18,7 @@ Bộ công cụ Elementor của MMe.vn: chia sẻ template Master → Client và
 * MMe Widgets: "Profile Carousel" — slide lớn (ảnh + tên, chức vụ, mô tả, nút) và dải ảnh nhỏ bên dưới để chuyển người; nhập tay hoặc lấy từ bài viết / CPT (ảnh đại diện, tiêu đề, field ACF).
 * MMe Widgets: "Map (no API key)" — bản đồ Google từ địa chỉ, toạ độ, link Google Maps (kể cả maps.app.goo.gl) hoặc field ACF Google Map / Link.
 * MMe Widgets: "Info Table (ACF)" — bảng thông tin label / giá trị lấy từ field ACF/SCF, post meta, shortcode hoặc dynamic tag.
+* MCP & Logs: cho trợ lý AI (Claude Code…) kết nối qua plugin MCP Adapter để xem thông tin site, đọc log lỗi, kiểm tra trang Elementor, render thử widget và cập nhật MMe Kit. Log lỗi hoạt động cả khi không sửa được wp-config.php.
 
 Site Master và Client đều cần cài plugin này cùng Elementor.
 
@@ -26,6 +27,13 @@ Site Master và Client đều cần cài plugin này cùng Elementor.
 Phát triển dựa trên "Elements Share for Elementor" của DivDojo (GPL-2.0+).
 
 == Changelog ==
+
+= 1.6.0 =
+* New: MCP abilities (WordPress 6.9+ Abilities API, exposed by the official MCP Adapter plugin): mme-kit/site-info, get-logs, set-debug-capture, inspect-elementor-page, render-widget, clear-elementor-cache, check-update, update-plugin. All need an administrator (updates need update_plugins).
+* New: MMe Kit → MCP & Logs page: requirement checks, application password step, and a ready "claude mcp add --transport http" command built in the browser (the password never leaves it).
+* New: error log without wp-config.php — fatal errors are always recorded; "capture mode" (time limited) also records warnings, notices, deprecations and JavaScript errors from the Elementor editor and preview. Stored in uploads/mme-kit-logs as an exit-guarded .php file, unreadable over the web.
+* New: the plugin can update itself from GitHub on request (used by update-plugin) and stays active afterwards.
+* Changed: "Check for updates" skips GitHub's raw file cache, so a version pushed minutes ago is seen right away.
 
 = 1.5.1 =
 * Fix: Profile Carousel declared the control "thumb_size" twice (thumbnail image size and thumbnail width). Elementor rejects the duplicate with a "Cannot redeclare control" notice, which can break the editor's widget render. The width control is now "thumb_width".

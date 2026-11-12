@@ -277,6 +277,17 @@
 		/*
 		 * Shared helpers
 		 */
+		// MCP page: build the "claude mcp add" command from the application password, in the browser only.
+		$(document).on('input', '#ems-mcp-password', function(){
+			var field    = $('#ems-mcp-command');
+			var password = $.trim( $(this).val() );
+			if ( ! password ) {
+				return;
+			}
+			var auth = window.btoa( unescape( encodeURIComponent( $(this).data('login') + ':' + password ) ) );
+			field.val( field.data('template').replace( '{auth}', auth ) );
+		});
+
 		$(document).on('click', '[data-ems-copy]', function(){
 			var button = $(this);
 			copyText( $( button.data('ems-copy') ).val() ).then(function(){
