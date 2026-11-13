@@ -4,7 +4,7 @@ Plugin URI: https://mme.vn
 Tags: elementor, templates, template library, acf, scf
 Requires at least: 5.5
 Requires PHP: 7.2
-Stable tag: 1.6.0
+Stable tag: 1.6.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -27,6 +27,9 @@ Site Master và Client đều cần cài plugin này cùng Elementor.
 Phát triển dựa trên "Elements Share for Elementor" của DivDojo (GPL-2.0+).
 
 == Changelog ==
+
+= 1.6.1 =
+* Fix: MCP abilities were registered but refused by the MCP Adapter ("not exposed via MCP (mcp.public!=true)"). They are now flagged meta.mcp.public, so MCP clients can call them.
 
 = 1.6.0 =
 * New: MCP abilities (WordPress 6.9+ Abilities API, exposed by the official MCP Adapter plugin): mme-kit/site-info, get-logs, set-debug-capture, inspect-elementor-page, render-widget, clear-elementor-cache, check-update, update-plugin. All need an administrator (updates need update_plugins).

@@ -186,7 +186,12 @@ class Ems_Mcp_Abilities {
             wp_register_ability( $name, array_merge( $definition, array(
                 'category' => self::CATEGORY,
                 'meta'     => array(
-                    'public'       => true,
+                    // The MCP Adapter's default server only exposes abilities
+                    // flagged meta.mcp.public; a top-level 'public' is ignored.
+                    'mcp'          => array(
+                        'public' => true,
+                        'type'   => 'tool',
+                    ),
                     'show_in_rest' => true,
                     'annotations'  => $annotations,
                 ),
