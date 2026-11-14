@@ -6,10 +6,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * AI account of this site: the encrypted API key and the calls to the AI service.
+ * MMe AI account of this site: the encrypted MMe API key and the calls to the
+ * MMe AI service (the chatbot platform), which writes the layouts.
  *
- * The provider is an implementation detail and is never named in the admin UI:
- * every message shown to people goes through generic texts (see error()).
+ * The site never talks to an AI provider directly: MMe runs the AI, uses the
+ * customer's business data to fill in real facts, and counts usage against the
+ * account's monthly limit.
  *
  * The key is encrypted with libsodium (bundled with WordPress) using a key derived
  * from the site's security salts in wp-config.php, so a database copy alone does
@@ -20,10 +22,17 @@ class Ems_Ai_Client {
     const OPTION = 'mme_kit_ai';
 
     /**
-     * Service settings (internal).
+     * MMe AI service. Override with define( 'MME_KIT_AI_API_URL', 'https://…' ) in
+     * wp-config.php (e.g. for a staging server) or the mme_kit_ai_base_url filter.
      */
-    const BASE_URL = 'https://api.deepseek.com';
-    const MODEL    = 'deepseek-chat';
+    const BASE_URL = 'https://chat.mme.vn';
+
+    const KEY_PATTERN = '/^mme_[A-Za-z0-9_-]{20,200}$/';
+
+    /** Seconds to wait for one generation (the service gives up at 240). */
+    const MAX_WAIT = 270;
+
+    const POLL_EVERY = 3;
 
     private static $instance = null;
 
@@ -32,7 +41,7 @@ class Ems_Ai_Client {
     /* ------------------------------------------------------------------ */
 
     /**
-     * Stored data: cipher, last4, saved, checked, status, balance.
+     * Stored data: cipher, last4, saved, kind, checked, status, account, usage.
      *
      * @return array
      */
@@ -41,9 +50,20 @@ class Ems_Ai_Client {
         return is_array( $data ) ? $data : array();
     }
 
+    /**
+     * Whether an MMe API key is stored.
+     */
     public static function has_key() {
         $data = self::data();
-        return ! empty( $data['cipher'] );
+        return ! empty( $data['cipher'] ) && isset( $data['kind'] ) && 'mme' === $data['kind'];
+    }
+
+    /**
+     * A key from before 1.8 (a direct AI provider key). It is no longer used.
+     */
+    public static function has_legacy_key() {
+        $data = self::data();
+        return ! empty( $data['cipher'] ) && ( ! isset( $data['kind'] ) || 'mme' !== $data['kind'] );
     }
 
     /**
@@ -60,15 +80,19 @@ class Ems_Ai_Client {
         return sodium_crypto_generichash( wp_salt( 'auth' ) . '|' . wp_salt( 'secure_auth' ) . '|mme-kit-ai', '', SODIUM_CRYPTO_SECRETBOX_KEYBYTES );
     }
 
+    public static function is_valid_format( $key ) {
+        return (bool) preg_match( self::KEY_PATTERN, trim( (string) $key ) );
+    }
+
     /**
-     * Encrypt and store a key.
+     * Encrypt and store an MMe API key.
      *
      * @param string $key
      * @return boolean
      */
     public static function save_key( $key ) {
         $key = trim( (string) $key );
-        if ( '' === $key || strlen( $key ) > 300 || preg_match( '/\s/', $key ) ) {
+        if ( ! self::is_valid_format( $key ) ) {
             return false;
         }
         $nonce  = random_bytes( SODIUM_CRYPTO_SECRETBOX_NONCEBYTES );
@@ -78,21 +102,22 @@ class Ems_Ai_Client {
             'cipher' => base64_encode( $nonce . $cipher ),
             'last4'  => substr( $key, -4 ),
             'saved'  => time(),
+            'kind'   => 'mme',
         ), false );
         return true;
     }
 
     /**
-     * Decrypted key, or '' (none, or unreadable because the salts changed).
+     * Decrypted MMe key, or '' (none, a legacy key, or unreadable because the salts changed).
      *
      * @return string
      */
     public static function get_key() {
-        $data = self::data();
-        if ( empty( $data['cipher'] ) ) {
+        if ( ! self::has_key() ) {
             return '';
         }
-        $raw = base64_decode( $data['cipher'], true );
+        $data = self::data();
+        $raw  = base64_decode( $data['cipher'], true );
         if ( false === $raw || strlen( $raw ) <= SODIUM_CRYPTO_SECRETBOX_NONCEBYTES ) {
             return '';
         }
@@ -107,7 +132,7 @@ class Ems_Ai_Client {
     }
 
     /**
-     * Remember the result of the last check (shown on the page).
+     * Remember the result of the last call (shown on the page).
      *
      * @param array $fields
      */
@@ -124,202 +149,184 @@ class Ems_Ai_Client {
     /* ------------------------------------------------------------------ */
 
     private static function base_url() {
+        $url = defined( 'MME_KIT_AI_API_URL' ) ? MME_KIT_AI_API_URL : self::BASE_URL;
         /**
-         * Internal: base URL of the AI service (used by tests).
+         * Base URL of the MMe AI service.
          */
-        return untrailingslashit( apply_filters( 'mme_kit_ai_base_url', self::BASE_URL ) );
+        return untrailingslashit( apply_filters( 'mme_kit_ai_base_url', $url ) );
     }
 
     /**
-     * Check the key and read the account balance.
-     *
-     * @return array|\WP_Error { ok, balance }
+     * @param string     $method GET or POST.
+     * @param string     $path   e.g. /api/v1/account
+     * @param array|null $body
+     * @return array|\WP_Error Decoded JSON body.
      */
-    public static function check() {
+    private static function request( $method, $path, $body = null ) {
         $key = self::get_key();
         if ( '' === $key ) {
             return self::error( 'no_key' );
         }
-
-        $response = wp_remote_get( self::base_url() . '/user/balance', array(
-            'timeout' => 20,
+        $args = array(
+            'method'  => $method,
+            'timeout' => 30,
             'headers' => array(
                 'Authorization' => 'Bearer ' . $key,
                 'Accept'        => 'application/json',
+                'Content-Type'  => 'application/json',
+                'User-Agent'    => 'MMeElementorKit/' . ( defined( 'EMS_ELEMENTS_SHARE_VERSION' ) ? EMS_ELEMENTS_SHARE_VERSION : 'dev' ) . '; ' . home_url( '/' ),
             ),
-        ) );
+        );
+        if ( null !== $body ) {
+            $args['body'] = wp_json_encode( $body );
+        }
+        $response = wp_remote_request( self::base_url() . $path, $args );
         if ( is_wp_error( $response ) ) {
-            self::update_data( array( 'checked' => time(), 'status' => 'network' ) );
             return self::error( 'network' );
         }
-
         $code = (int) wp_remote_retrieve_response_code( $response );
-        if ( 200 !== $code ) {
-            $error = self::error_for_status( $code );
-            self::update_data( array( 'checked' => time(), 'status' => str_replace( 'mme_kit_ai_', '', $error->get_error_code() ) ) );
-            return $error;
+        $data = json_decode( wp_remote_retrieve_body( $response ), true );
+        if ( $code < 200 || $code >= 300 ) {
+            return self::error_from_response( $code, is_array( $data ) ? $data : array() );
         }
-
-        $body    = json_decode( wp_remote_retrieve_body( $response ), true );
-        $balance = '';
-        if ( ! empty( $body['balance_infos'][0] ) ) {
-            $info    = $body['balance_infos'][0];
-            $balance = trim( ( isset( $info['total_balance'] ) ? $info['total_balance'] : '' ) . ' ' . ( isset( $info['currency'] ) ? $info['currency'] : '' ) );
-        }
-        $available = ! isset( $body['is_available'] ) || $body['is_available'];
-        $status    = $available ? 'ok' : 'no_balance';
-
-        self::update_data( array( 'checked' => time(), 'status' => $status, 'balance' => $balance ) );
-        return $available ? array( 'ok' => true, 'balance' => $balance ) : self::error( 'no_balance' );
+        return is_array( $data ) ? $data : self::error( 'service' );
     }
 
     /**
-     * Chat completion returning JSON text, streamed so long answers do not hit
-     * proxy timeouts. $on_progress( int $chars ) is called while text arrives.
+     * Check the key and read the account and this month's usage.
      *
-     * @param array    $messages
-     * @param callable $on_progress
-     * @return string|\WP_Error The answer's text.
+     * @return array|\WP_Error { ok, account, usage }
      */
-    public static function complete_json( $messages, $on_progress = null ) {
-        $key = self::get_key();
-        if ( '' === $key ) {
-            return self::error( 'no_key' );
+    public static function check() {
+        $data = self::request( 'GET', '/api/v1/account' );
+        if ( is_wp_error( $data ) ) {
+            self::update_data( array( 'checked' => time(), 'status' => str_replace( 'mme_kit_ai_', '', $data->get_error_code() ) ) );
+            return $data;
         }
-
-        $payload = wp_json_encode( array(
-            'model'           => self::MODEL,
-            'messages'        => $messages,
-            'response_format' => array( 'type' => 'json_object' ),
-            'temperature'     => 0.7,
-            'max_tokens'      => 8000,
-            'stream'          => true,
-        ) );
-
-        if ( ! function_exists( 'curl_init' ) ) {
-            return self::complete_without_stream( $key, $payload );
-        }
-
-        $content = '';
-        $buffer  = '';
-        $raw     = '';
-        $ch      = curl_init( self::base_url() . '/chat/completions' );
-        curl_setopt_array( $ch, array(
-            CURLOPT_POST           => true,
-            CURLOPT_POSTFIELDS     => $payload,
-            CURLOPT_HTTPHEADER     => array(
-                'Content-Type: application/json',
-                'Accept: text/event-stream',
-                'Authorization: Bearer ' . $key,
-            ),
-            CURLOPT_CONNECTTIMEOUT => 15,
-            CURLOPT_TIMEOUT        => 240,
-            CURLOPT_WRITEFUNCTION  => function ( $ch, $chunk ) use ( &$content, &$buffer, &$raw, $on_progress ) {
-                $raw    .= strlen( $raw ) < 4000 ? $chunk : '';
-                $buffer .= $chunk;
-                while ( false !== ( $pos = strpos( $buffer, "\n" ) ) ) {
-                    $line   = trim( substr( $buffer, 0, $pos ) );
-                    $buffer = substr( $buffer, $pos + 1 );
-                    if ( 0 !== strpos( $line, 'data:' ) ) {
-                        continue; // Blank lines and ": keep-alive" comments.
-                    }
-                    $data = trim( substr( $line, 5 ) );
-                    if ( '[DONE]' === $data ) {
-                        continue;
-                    }
-                    $event = json_decode( $data, true );
-                    if ( isset( $event['choices'][0]['delta']['content'] ) ) {
-                        $content .= $event['choices'][0]['delta']['content'];
-                    }
-                }
-                if ( $on_progress ) {
-                    call_user_func( $on_progress, strlen( $content ) );
-                }
-                return strlen( $chunk );
-            },
-        ) );
-        $ok    = curl_exec( $ch );
-        $code  = (int) curl_getinfo( $ch, CURLINFO_HTTP_CODE );
-        $errno = curl_errno( $ch );
-        curl_close( $ch );
-
-        if ( ! $ok || $errno ) {
-            return self::error( CURLE_OPERATION_TIMEDOUT === $errno ? 'timeout' : 'network' );
-        }
-        if ( 200 !== $code ) {
-            return self::error_for_status( $code );
-        }
-        if ( '' === trim( $content ) ) {
-            return self::error( 'empty' );
-        }
-        return $content;
+        $account = isset( $data['name'] ) ? sanitize_text_field( $data['name'] ) : '';
+        $usage   = isset( $data['usage'] ) && is_array( $data['usage'] ) ? self::clean_usage( $data['usage'] ) : array();
+        self::update_data( array( 'checked' => time(), 'status' => 'ok', 'account' => $account, 'usage' => $usage ) );
+        return array( 'ok' => true, 'account' => $account, 'usage' => $usage );
     }
 
-    private static function complete_without_stream( $key, $payload ) {
-        $payload  = str_replace( '"stream":true', '"stream":false', $payload );
-        $response = wp_remote_post( self::base_url() . '/chat/completions', array(
-            'timeout' => 240,
-            'headers' => array(
-                'Content-Type'  => 'application/json',
-                'Authorization' => 'Bearer ' . $key,
-            ),
-            'body'    => $payload,
+    private static function clean_usage( $usage ) {
+        return array(
+            'used'   => isset( $usage['used'] ) ? (int) $usage['used'] : 0,
+            'quota'  => isset( $usage['quota'] ) ? (int) $usage['quota'] : 0,
+            'period' => isset( $usage['period'] ) ? sanitize_text_field( $usage['period'] ) : '',
+        );
+    }
+
+    /**
+     * Ask MMe to write a layout and wait for it.
+     *
+     * $on_wait( int $seconds ) is called while waiting, for progress messages.
+     *
+     * @param array    $request brief, kind, site_name.
+     * @param callable $on_wait
+     * @return array|\WP_Error The layout (title, sections).
+     */
+    public static function generate( $request, $on_wait = null ) {
+        $job = self::request( 'POST', '/api/v1/pages', array(
+            'brief'         => (string) $request['brief'],
+            'kind'          => (string) $request['kind'],
+            'site_name'     => (string) $request['site_name'],
+            'output'        => 'layout',
+            'use_knowledge' => true,
         ) );
-        if ( is_wp_error( $response ) ) {
-            return self::error( 'network' );
+        if ( is_wp_error( $job ) ) {
+            return $job;
         }
-        $code = (int) wp_remote_retrieve_response_code( $response );
-        if ( 200 !== $code ) {
-            return self::error_for_status( $code );
+        if ( isset( $job['usage'] ) && is_array( $job['usage'] ) ) {
+            self::update_data( array( 'usage' => self::clean_usage( $job['usage'] ) ) );
         }
-        $body = json_decode( wp_remote_retrieve_body( $response ), true );
-        if ( empty( $body['choices'][0]['message']['content'] ) ) {
-            return self::error( 'empty' );
+        if ( empty( $job['id'] ) || ! preg_match( '/^[0-9a-f-]{36}$/', $job['id'] ) ) {
+            return self::error( 'service' );
         }
-        return $body['choices'][0]['message']['content'];
+
+        $started = time();
+        while ( time() - $started < self::MAX_WAIT ) {
+            sleep( self::POLL_EVERY );
+            if ( $on_wait ) {
+                call_user_func( $on_wait, time() - $started );
+            }
+            $state = self::request( 'GET', '/api/v1/pages/' . $job['id'] );
+            if ( is_wp_error( $state ) ) {
+                // A failed poll (network blip) is retried until the time is up.
+                if ( in_array( $state->get_error_code(), array( 'mme_kit_ai_network', 'mme_kit_ai_service', 'mme_kit_ai_busy' ), true ) ) {
+                    continue;
+                }
+                return $state;
+            }
+            $status = isset( $state['status'] ) ? $state['status'] : '';
+            if ( 'done' === $status ) {
+                if ( empty( $state['result']['layout'] ) || ! is_array( $state['result']['layout'] ) ) {
+                    return self::error( 'no_sections' );
+                }
+                return $state['result']['layout'];
+            }
+            if ( 'error' === $status ) {
+                $code    = isset( $state['error']['code'] ) ? sanitize_key( $state['error']['code'] ) : 'service';
+                $message = isset( $state['error']['message'] ) ? sanitize_text_field( $state['error']['message'] ) : '';
+                return self::error( $code, $message );
+            }
+        }
+        return self::error( 'timeout' );
     }
 
     /* ------------------------------------------------------------------ */
-    /* Generic messages                                                     */
+    /* Messages                                                             */
     /* ------------------------------------------------------------------ */
 
-    private static function error_for_status( $code ) {
-        switch ( $code ) {
-            case 401:
-            case 403:
-                return self::error( 'invalid_key' );
-            case 402:
-                return self::error( 'no_balance' );
-            case 429:
-                return self::error( 'busy' );
-            case 400:
-            case 422:
-                return self::error( 'rejected' );
+    private static function error_from_response( $code, $data ) {
+        $detail = isset( $data['detail'] ) && is_array( $data['detail'] ) ? $data['detail'] : array();
+        $reason = isset( $detail['code'] ) ? sanitize_key( $detail['code'] ) : '';
+        $text   = isset( $detail['message'] ) ? sanitize_text_field( $detail['message'] ) : '';
+        if ( $reason ) {
+            return self::error( $reason, $text );
+        }
+        if ( 401 === $code || 403 === $code ) {
+            return self::error( 'invalid_key' );
+        }
+        if ( 429 === $code ) {
+            return self::error( 'busy' );
+        }
+        if ( 422 === $code || 400 === $code ) {
+            return self::error( 'rejected' );
         }
         return self::error( 'service' );
     }
 
     /**
-     * Error with a message that does not name the AI service.
+     * Error with a message for people. $detail (from the MMe service) is used for
+     * the codes whose wording depends on the account, such as the monthly limit.
      *
      * @param string $code
+     * @param string $detail
      * @return \WP_Error
      */
-    public static function error( $code ) {
+    public static function error( $code, $detail = '' ) {
         $messages = array(
-            'no_key'      => __( 'No AI API key on this site yet.', 'mme-elementor-kit' ),
-            'invalid_key' => __( 'The AI API key is not valid. Check it, or create a new one in your AI account.', 'mme-elementor-kit' ),
-            'no_balance'  => __( 'The AI account has no balance left. Top it up, then try again.', 'mme-elementor-kit' ),
-            'busy'        => __( 'The AI service is busy (too many requests). Wait a minute and try again.', 'mme-elementor-kit' ),
-            'rejected'    => __( 'The AI service refused the request. Try a shorter or simpler description.', 'mme-elementor-kit' ),
-            'service'     => __( 'The AI service is not answering right now. Try again in a few minutes.', 'mme-elementor-kit' ),
-            'network'     => __( 'This site could not reach the AI service (network or firewall).', 'mme-elementor-kit' ),
-            'timeout'     => __( 'The AI took too long to answer. Try again, or ask for a smaller layout.', 'mme-elementor-kit' ),
-            'empty'       => __( 'The AI returned an empty answer. Try again.', 'mme-elementor-kit' ),
-            'bad_json'    => __( 'The AI answer could not be read as a layout. Try again.', 'mme-elementor-kit' ),
-            'no_sections' => __( 'The AI answer had no usable sections. Try describing the layout in more detail.', 'mme-elementor-kit' ),
+            'no_key'         => __( 'No MMe API key on this site yet.', 'mme-elementor-kit' ),
+            'invalid_key'    => __( 'The MMe API key is not valid or was revoked. Ask MMe for a new key.', 'mme-elementor-kit' ),
+            'feature_off'    => __( 'AI page generation is not enabled for this MMe account. Contact MMe.', 'mme-elementor-kit' ),
+            'quota_exceeded' => __( 'This month\'s AI page limit is used up. It resets next month, or contact MMe for more.', 'mme-elementor-kit' ),
+            'busy'           => __( 'Another layout is still being written. Wait for it to finish, then try again.', 'mme-elementor-kit' ),
+            'rate_limited'   => __( 'Too many requests. Wait a minute and try again.', 'mme-elementor-kit' ),
+            'rejected'       => __( 'The request was refused. Try a shorter or simpler description.', 'mme-elementor-kit' ),
+            'service'        => __( 'The MMe AI service is not answering right now. Try again in a few minutes.', 'mme-elementor-kit' ),
+            'network'        => __( 'This site could not reach the MMe AI service (network or firewall).', 'mme-elementor-kit' ),
+            'timeout'        => __( 'The AI took too long to answer. Try again, or ask for a smaller layout.', 'mme-elementor-kit' ),
+            'interrupted'    => __( 'The AI service restarted while writing. Try again.', 'mme-elementor-kit' ),
+            'empty'          => __( 'The AI returned an empty answer. Try again.', 'mme-elementor-kit' ),
+            'bad_json'       => __( 'The AI answer could not be read as a layout. Try again.', 'mme-elementor-kit' ),
+            'no_sections'    => __( 'The AI answer had no usable sections. Try describing the layout in more detail.', 'mme-elementor-kit' ),
         );
-        return new \WP_Error( 'mme_kit_ai_' . $code, isset( $messages[ $code ] ) ? $messages[ $code ] : $messages['service'] );
+        $message = isset( $messages[ $code ] ) ? $messages[ $code ] : $messages['service'];
+        if ( 'quota_exceeded' === $code && '' !== $detail ) {
+            $message = $detail;
+        }
+        return new \WP_Error( 'mme_kit_ai_' . $code, $message );
     }
 
     public static function get_instance() {

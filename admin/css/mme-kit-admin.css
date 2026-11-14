@@ -609,6 +609,7 @@
 
 .ems-alert--success { color: #065f46; background: var(--ems-green-soft); border: 1px solid #a7f3d0; }
 .ems-alert--error { color: #991b1b; background: var(--ems-red-soft); border: 1px solid #fecaca; }
+.ems-alert--warning { color: #92400e; background: #fffbeb; border: 1px solid #fde68a; }
 
 /* Aside helpers */
 .ems-steps {

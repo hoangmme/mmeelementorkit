@@ -4,7 +4,7 @@ Plugin URI: https://mme.vn
 Tags: elementor, templates, template library, acf, scf
 Requires at least: 5.5
 Requires PHP: 7.2
-Stable tag: 1.7.1
+Stable tag: 1.8.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -27,6 +27,12 @@ Site Master và Client đều cần cài plugin này cùng Elementor.
 Phát triển dựa trên "Elements Share for Elementor" của DivDojo (GPL-2.0+).
 
 == Changelog ==
+
+= 1.8.0 =
+* Changed: the AI layout generator now runs through the MMe AI service. Paste the MMe API key (starts with "mme_", given by MMe) instead of an AI provider key: no AI account of your own is needed, and the layout uses your business information from MMe (services, prices, contact) instead of placeholders where it can. Usage counts against the MMe account's monthly page limit, shown next to the key.
+* Changed: a provider key saved by 1.7.x is no longer used; the page asks for the MMe key instead.
+* The layout format, Elementor building, sanitizing and the "new template / end of page" choice are unchanged. Generation no longer streams from the AI: the page shows the elapsed time while MMe writes the layout (usually 20-90 s).
+* Override the service address with define( 'MME_KIT_AI_API_URL', 'https://…' ) in wp-config.php (e.g. a staging server).
 
 = 1.7.1 =
 * New: MCP abilities mme-kit/insert-element (add a widget or a container before / after / inside an element, or at the start / end of a page, with fresh ids) and mme-kit/remove-element (returns the removed element as a backup). Both save like the editor, with a revision, and need manage_options plus edit rights on the post.

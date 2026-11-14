@@ -8,10 +8,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * AI layout generator.
  *
- * The AI never writes Elementor data directly: it answers in a small layout
- * format (sections made of blocks, see system_prompt()), which is validated and
- * turned into Elementor containers and core widgets here. Unknown blocks and
- * values are dropped, text is sanitized, images are placeholders.
+ * The MMe AI service (see Ems_Ai_Client) writes a small layout format (sections
+ * made of blocks) using the customer's business data; it never writes Elementor
+ * data directly. The layout is validated again and turned into Elementor
+ * containers and core widgets here. Unknown blocks and values are dropped, text
+ * is sanitized, images are placeholders.
  */
 class Ems_Ai_Layout {
 
@@ -43,7 +44,7 @@ class Ems_Ai_Layout {
         $status = '';
         if ( 'save' === $do ) {
             $key = isset( $_POST['ai_key'] ) ? trim( wp_unslash( $_POST['ai_key'] ) ) : '';
-            if ( ! Ems_Ai_Client::save_key( $key ) ) {
+            if ( ! Ems_Ai_Client::save_key( $key ) ) { // Also replaces a legacy key.
                 $status = 'key_invalid_format';
             } else {
                 $check  = Ems_Ai_Client::check();
@@ -83,15 +84,15 @@ class Ems_Ai_Layout {
 
         switch ( $status ) {
             case 'saved':
-                return array( 'success', __( 'API key saved (encrypted) and working.', 'mme-elementor-kit' ) );
+                return array( 'success', __( 'MMe API key saved (encrypted) and connected.', 'mme-elementor-kit' ) );
             case 'checked':
-                return array( 'success', __( 'The API key works.', 'mme-elementor-kit' ) );
+                return array( 'success', __( 'Connected to MMe.', 'mme-elementor-kit' ) );
             case 'removed':
                 return array( 'success', __( 'API key removed from this site.', 'mme-elementor-kit' ) );
             case 'key_invalid_format':
-                return array( 'error', __( 'That does not look like an API key (empty, too long or contains spaces).', 'mme-elementor-kit' ) );
+                return array( 'error', __( 'That is not an MMe API key. It starts with "mme_" and is given by MMe.', 'mme-elementor-kit' ) );
             case 'saved_check_failed':
-                return array( 'error', __( 'API key saved, but the check failed:', 'mme-elementor-kit' ) . ' ' . $detail );
+                return array( 'error', __( 'API key saved, but the connection check failed:', 'mme-elementor-kit' ) . ' ' . $detail );
             case 'check_failed':
                 return array( 'error', $detail ? $detail : __( 'The check failed.', 'mme-elementor-kit' ) );
         }
@@ -139,21 +140,29 @@ class Ems_Ai_Layout {
             exit;
         }
 
+        if ( ! array_key_exists( $kind, self::kinds() ) ) {
+            $kind = 'auto';
+        }
+
         $send( 'S', __( 'Writing the layout…', 'mme-elementor-kit' ) );
-        $last = 0;
-        $text = Ems_Ai_Client::complete_json( $this->messages( $brief, $kind ), function ( $chars ) use ( $send, &$last ) {
-            if ( $chars - $last >= 200 ) {
-                $last = $chars;
-                $send( 'P', (string) $chars );
+        $layout = Ems_Ai_Client::generate(
+            array(
+                'brief'     => $brief,
+                'kind'      => $kind,
+                'site_name' => get_bloginfo( 'name' ),
+            ),
+            function ( $seconds ) use ( $send ) {
+                /* translators: %d: seconds since the request started */
+                $send( 'S', sprintf( __( 'Writing the layout… %ds', 'mme-elementor-kit' ), $seconds ) );
             }
-        } );
-        if ( is_wp_error( $text ) ) {
-            $send( 'E', $text->get_error_message() );
+        );
+        if ( is_wp_error( $layout ) ) {
+            $send( 'E', $layout->get_error_message() );
             exit;
         }
 
         $send( 'S', __( 'Building the Elementor layout…', 'mme-elementor-kit' ) );
-        $result = $this->create( $text, $target );
+        $result = $this->create( $layout, $target );
         if ( is_wp_error( $result ) ) {
             $send( 'E', $result->get_error_message() );
             exit;
@@ -163,14 +172,16 @@ class Ems_Ai_Layout {
     }
 
     /**
-     * Turn the AI answer into Elementor data and save it.
+     * Turn a layout into Elementor data and save it.
      *
-     * @param string $text   AI answer (JSON).
-     * @param int    $target 0 for a new template, or a page to append to.
+     * @param array|string $layout Layout from the MMe AI service (array, or its JSON text).
+     * @param int          $target 0 for a new template, or a page to append to.
      * @return array|\WP_Error
      */
-    public function create( $text, $target = 0 ) {
-        $layout = json_decode( $this->strip_fences( $text ), true );
+    public function create( $layout, $target = 0 ) {
+        if ( is_string( $layout ) ) {
+            $layout = json_decode( $this->strip_fences( $layout ), true );
+        }
         if ( ! is_array( $layout ) ) {
             return Ems_Ai_Client::error( 'bad_json' );
         }
@@ -230,7 +241,7 @@ class Ems_Ai_Layout {
     }
 
     /* ------------------------------------------------------------------ */
-    /* Prompt                                                               */
+    /* Layout types (the prompt itself lives on the MMe AI service)         */
     /* ------------------------------------------------------------------ */
 
     public static function kinds() {
@@ -246,67 +257,6 @@ class Ems_Ai_Layout {
             'faq'      => __( 'FAQ', 'mme-elementor-kit' ),
             'cta'      => __( 'Call to action', 'mme-elementor-kit' ),
         );
-    }
-
-    private function messages( $brief, $kind ) {
-        $kinds = array(
-            'auto'     => 'Choose what fits the request (one or more sections).',
-            'landing'  => 'A complete landing page: hero, 3-6 content sections, FAQ if useful, closing call to action.',
-            'hero'     => 'One hero section: eyebrow, h1, short lead, 1-2 buttons, optionally a split with an image.',
-            'features' => 'One section of benefits/features as cards (3, 4 or 6 items).',
-            'services' => 'One section presenting services as cards with icons, plus a button.',
-            'process'  => 'One section showing numbered steps (cards titled "01 ...", "02 ...").',
-            'team'     => 'One team section: cards with name as title and role + short bio as text (no photos).',
-            'pricing'  => 'One pricing section: cards with plan name, price placeholder, list of inclusions, button.',
-            'faq'      => 'One FAQ section with 5-8 questions.',
-            'cta'      => 'One call-to-action section on a "primary" or "dark" background.',
-        );
-        $hint = isset( $kinds[ $kind ] ) ? $kinds[ $kind ] : $kinds['auto'];
-
-        $user = "Request:\n" . $brief . "\n\nLayout type: " . $hint . "\nSite name: " . get_bloginfo( 'name' );
-
-        return array(
-            array( 'role' => 'system', 'content' => self::system_prompt() ),
-            array( 'role' => 'user', 'content' => $user ),
-        );
-    }
-
-    public static function system_prompt() {
-        return <<<'PROMPT'
-You design website sections for Elementor. Answer with ONE JSON object only, no prose, in this format:
-
-{
-  "title": "short name of the layout",
-  "sections": [
-    {
-      "style": "light" | "soft" | "primary" | "dark",
-      "align": "left" | "center",
-      "blocks": [ BLOCK, ... ]
-    }
-  ]
-}
-
-BLOCK is one of:
-{"type":"eyebrow","text":"small label above a heading"}
-{"type":"heading","text":"...","level":1|2|3}          (level 1 only once, in the first section)
-{"type":"text","html":"<p>...</p>"}                     (tags allowed: p, strong, em, br, ul, ol, li, a)
-{"type":"buttons","items":[{"text":"...","url":"#contact","style":"primary"|"outline"}]}   (1-2 items)
-{"type":"image","alt":"what the image should show"}
-{"type":"list","icon":"fas fa-check","items":["...","..."]}
-{"type":"cards","columns":2|3|4,"items":[{"icon":"fas fa-star","title":"...","text":"..."}]}
-{"type":"stats","items":[{"value":"...","label":"..."}]}
-{"type":"faq","items":[{"q":"...","a":"..."}]}
-{"type":"split","ratio":"50-50"|"60-40"|"40-60","left":[BLOCK,...],"right":[BLOCK,...]}   (no split inside split)
-{"type":"spacer","size":"sm"|"md"|"lg"}
-
-Rules:
-- Write all copy in the language of the request. Clear, specific, benefit-led; no lorem ipsum.
-- Never invent facts: no made-up numbers, prices, awards, client names or testimonials. Where a fact is needed, write a visible placeholder in square brackets, e.g. "[Số năm kinh nghiệm]" / "[Price]".
-- Icons are Font Awesome 5 Free names: "fas fa-..." or "far fa-..." or "fab fa-...".
-- Alternate section styles for rhythm (e.g. light, soft, light, primary). Use "primary" or "dark" for calls to action.
-- Keep sections focused: 2-7 blocks each. At most 10 sections.
-- Button urls: use "#contact" or another "#anchor" unless the request gives a real link.
-PROMPT;
     }
 
     /* ------------------------------------------------------------------ */
