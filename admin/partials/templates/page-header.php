@@ -27,7 +27,7 @@ if ( current_user_can( 'update_plugins' ) ) {
     );
 }
 $ems_tabs[ Ems_Elements_Share_Menu_Handler::MCP_SLUG ] = array(
-    'label' => __( 'MCP & Logs', 'mme-elementor-kit' ),
+    'label' => __( 'MCP, AI & Logs', 'mme-elementor-kit' ),
     'icon'  => 'dashicons-rest-api',
 );
 ?>

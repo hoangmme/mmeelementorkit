@@ -53,7 +53,7 @@ class Ems_Elements_Share_Menu_Handler {
 
 		$update_count = Ems_Updater::get_instance()->has_update( false ) ? ' <span class="update-plugins count-1"><span class="plugin-count">1</span></span>' : '';
 		add_submenu_page( self::MASTER_SLUG, __( 'Updates', 'mme-elementor-kit' ), __( 'Updates', 'mme-elementor-kit' ) . $update_count, 'update_plugins', self::UPDATES_SLUG, array( $this, 'render_updates_page' ) );
-		add_submenu_page( self::MASTER_SLUG, __( 'MCP & Logs', 'mme-elementor-kit' ), __( 'MCP & Logs', 'mme-elementor-kit' ), $capability, self::MCP_SLUG, array( $this, 'render_mcp_page' ) );
+		add_submenu_page( self::MASTER_SLUG, __( 'MCP, AI & Logs', 'mme-elementor-kit' ), __( 'MCP, AI & Logs', 'mme-elementor-kit' ), $capability, self::MCP_SLUG, array( $this, 'render_mcp_page' ) );
 	}
 
 	/**

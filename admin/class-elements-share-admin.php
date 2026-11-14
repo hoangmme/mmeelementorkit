@@ -203,6 +203,13 @@ class Ems_Elements_Share_Admin {
 			'replace_confirm' => __( 'Replace all keys?', 'mme-elementor-kit' ),
 			'replace_text'    => __( 'Keys that are not in the file will be deleted and their client sites will lose access.', 'mme-elementor-kit' ),
 			'replace_btn'     => __( 'Yes, replace', 'mme-elementor-kit' ),
+			'ai_short'        => __( 'Describe the layout in a sentence or more.', 'mme-elementor-kit' ),
+			'ai_start'        => __( 'Sending to the AI…', 'mme-elementor-kit' ),
+			'ai_progress'     => __( 'Writing the layout… %d characters', 'mme-elementor-kit' ),
+			'ai_done'         => __( 'Done: %1$d sections added to %2$s.', 'mme-elementor-kit' ),
+			'ai_edit'         => __( 'Edit in Elementor', 'mme-elementor-kit' ),
+			'ai_view'         => __( 'Preview', 'mme-elementor-kit' ),
+			'ai_failed'       => __( 'The request stopped before the layout was ready. Try again.', 'mme-elementor-kit' ),
 		);
 		wp_localize_script( 'mme-kit-admin-js', 'mme_kit', $translations );
 	}

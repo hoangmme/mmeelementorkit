@@ -141,6 +141,8 @@ class Ems_Elements_Share {
 		 */
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/mcp/class-debug-log.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/mcp/class-mcp-abilities.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/ai/class-ai-client.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/ai/class-ai-layout.php';
 
 		$this->loader = new Ems_Elements_Share_Loader();
 
@@ -220,6 +222,7 @@ class Ems_Elements_Share {
 		// First, so errors raised while the rest of the plugin loads are recorded too.
 		\Ems_Elements_Share\Mcp\Ems_Debug_Log::get_instance();
 		\Ems_Elements_Share\Mcp\Ems_Mcp_Abilities::get_instance();
+		\Ems_Elements_Share\Ai\Ems_Ai_Layout::get_instance();
 
 	}
 

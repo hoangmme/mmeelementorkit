@@ -4,7 +4,7 @@ Plugin URI: https://mme.vn
 Tags: elementor, templates, template library, acf, scf
 Requires at least: 5.5
 Requires PHP: 7.2
-Stable tag: 1.6.3
+Stable tag: 1.7.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -27,6 +27,12 @@ Site Master và Client đều cần cài plugin này cùng Elementor.
 Phát triển dựa trên "Elements Share for Elementor" của DivDojo (GPL-2.0+).
 
 == Changelog ==
+
+= 1.7.0 =
+* New: AI layout generator on MMe Kit → MCP, AI & Logs. Describe a section or a page and pick a type (landing page, hero, features, services, process, team, pricing, FAQ, call to action); the AI builds it with Elementor containers and core widgets (heading, text, button, image, icon box, icon list) using the site's global colors, as a new template or at the end of an Elementor page (with a revision to undo).
+* New: AI API key field. The key is encrypted on the site (libsodium, keyed by the security salts in wp-config.php), shown only as its last 4 characters, never sent to the browser or logged; Test, Replace and Remove buttons.
+* Safety: the AI answers in a small layout format that MMe Kit validates: unknown blocks are dropped, text and links are sanitized (no scripts, only #anchors, http(s), mailto and tel), facts it cannot know are left as [placeholders], images are placeholders. Readable text colors are chosen from the brightness of the site colors.
+* Changed: the "MCP & Logs" page is now "MCP, AI & Logs".
 
 = 1.6.3 =
 * New: MCP ability mme-kit/update-element: change the settings of one element on an Elementor page (e.g. the code of an HTML widget, a heading's text) and save it like the editor, with a revision kept for History. Returns the previous values as a backup; dry_run previews the change. Needs an administrator who can edit that post.

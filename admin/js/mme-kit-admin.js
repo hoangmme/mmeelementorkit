@@ -288,6 +288,81 @@
 			field.val( field.data('template').replace( '{auth}', auth ) );
 		});
 
+		// AI: show the field to replace the key.
+		$(document).on('click', '[data-ems-ai-replace]', function(){
+			$(this).closest('form').find('.ems-ai-key__new').prop('hidden', false).find('input').trigger('focus');
+		});
+
+		// AI: generate a layout. The answer is streamed as lines: "S text", "P chars", "R json", "E message".
+		$(document).on('submit', '.ems-ai-generate', function(e){
+			e.preventDefault();
+			var form   = $(this);
+			var button = form.find('button[type=submit]');
+			var status = form.find('.ems-ai-status');
+			var result = form.find('.ems-ai-result').prop('hidden', true).empty();
+			var brief  = $.trim( form.find('#ems-ai-brief').val() );
+
+			if ( brief.length < 10 ) {
+				status.text( mme_kit.ai_short );
+				return;
+			}
+
+			var body = new FormData();
+			body.append('action', 'mme_kit_ai_generate');
+			body.append('nonce', form.data('nonce'));
+			body.append('brief', brief);
+			body.append('kind', form.find('[name=kind]').val());
+			body.append('target', form.find('[name=target]').val());
+
+			button.prop('disabled', true).addClass('is-loading');
+			status.removeClass('ems-text-red').text( mme_kit.ai_start );
+
+			var finished = false;
+			var handle = function(line){
+				var type = line.charAt(0), text = $.trim( line.substr(2) );
+				if ( ! text ) { return; }
+				if ( 'S' === type ) {
+					status.text( text );
+				} else if ( 'P' === type ) {
+					status.text( mme_kit.ai_progress.replace('%d', text) );
+				} else if ( 'E' === type ) {
+					finished = true;
+					status.addClass('ems-text-red').text( text );
+				} else if ( 'R' === type ) {
+					finished = true;
+					var data = JSON.parse( text );
+					status.text( mme_kit.ai_done.replace('%1$d', data.sections).replace('%2$s', data.title) );
+					result.prop('hidden', false).append(
+						$('<a class="ems-btn ems-btn--primary" target="_blank" rel="noopener"></a>').attr('href', data.edit).text( mme_kit.ai_edit ),
+						$('<a class="ems-btn ems-btn--ghost" target="_blank" rel="noopener"></a>').attr('href', data.view).text( mme_kit.ai_view )
+					);
+				}
+			};
+
+			fetch( ajaxurl, { method: 'POST', body: body, credentials: 'same-origin' } ).then(function(response){
+				var reader = response.body.getReader(), decoder = new TextDecoder(), buffer = '';
+				var pump = function(){
+					return reader.read().then(function(chunk){
+						if ( chunk.done ) {
+							if ( buffer ) { handle( buffer ); }
+							return;
+						}
+						buffer += decoder.decode( chunk.value, { stream: true } );
+						var lines = buffer.split('\n');
+						buffer = lines.pop();
+						lines.forEach( handle );
+						return pump();
+					});
+				};
+				return pump();
+			}).catch(function(){}).then(function(){
+				if ( ! finished ) {
+					status.addClass('ems-text-red').text( mme_kit.ai_failed );
+				}
+				button.prop('disabled', false).removeClass('is-loading');
+			});
+		});
+
 		$(document).on('click', '[data-ems-copy]', function(){
 			var button = $(this);
 			copyText( $( button.data('ems-copy') ).val() ).then(function(){

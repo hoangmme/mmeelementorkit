@@ -153,6 +153,8 @@ $capture_until = $log->capture_until();
                 </p>
             </div>
 
+            <?php require __DIR__ . '/ai-card.php'; ?>
+
             <div class="ems-card">
                 <h2 class="ems-card__title"><?php echo esc_html__( 'MMe Kit tools available to the AI', 'mme-elementor-kit' ); ?></h2>
                 <ul class="ems-meta">
