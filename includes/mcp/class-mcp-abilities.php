@@ -26,11 +26,22 @@ class Ems_Mcp_Abilities {
      */
     const MAX_OUTPUT = 120000;
 
+    /**
+     * WordPress.org slug of the official MCP Adapter plugin.
+     */
+    const ADAPTER_SLUG = 'mcp-adapter';
+
+    /**
+     * Admin page slug of "MMe Kit → MCP & Logs" (Ems_Elements_Share_Menu_Handler::MCP_SLUG).
+     */
+    const PAGE_SLUG = 'mme-elementor-kit-mcp';
+
     private static $instance = null;
 
     public function __construct() {
         add_action( 'wp_abilities_api_categories_init', array( $this, 'register_category' ) );
         add_action( 'wp_abilities_api_init', array( $this, 'register_abilities' ) );
+        add_action( 'admin_init', array( $this, 'handle_adapter_form' ) );
     }
 
     /**
@@ -43,12 +54,13 @@ class Ems_Mcp_Abilities {
     }
 
     /**
-     * Whether the MCP Adapter plugin is active.
+     * Whether MCP Adapter code is loaded, from its plugin or bundled in another
+     * plugin (Elementor 4.x ships a copy). See adapter_state() for the details.
      *
      * @return boolean
      */
     public static function mcp_adapter_active() {
-        return class_exists( '\WP\MCP\Plugin' );
+        return class_exists( '\WP\MCP\Core\McpAdapter' ) || class_exists( '\WP\MCP\Plugin' );
     }
 
     /**
@@ -58,6 +70,199 @@ class Ems_Mcp_Abilities {
      */
     public static function endpoint_url() {
         return rest_url( 'mcp/mcp-adapter-default-server' );
+    }
+
+    /**
+     * Whether the default MCP server route is registered (the endpoint really answers).
+     *
+     * @return boolean
+     */
+    public static function endpoint_registered() {
+        if ( ! function_exists( 'rest_get_server' ) ) {
+            return false;
+        }
+        $routes = rest_get_server()->get_routes();
+        return isset( $routes['/mcp/mcp-adapter-default-server'] );
+    }
+
+    /**
+     * Plugin file of the MCP Adapter plugin ("mcp-adapter/mcp-adapter.php"), or '' when not installed.
+     *
+     * @return string
+     */
+    public static function adapter_plugin_file() {
+        if ( ! function_exists( 'get_plugins' ) ) {
+            require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        }
+        foreach ( get_plugins() as $file => $data ) {
+            if ( 0 === strpos( $file, self::ADAPTER_SLUG . '/' ) || 'MCP Adapter' === $data['Name'] ) {
+                return $file;
+            }
+        }
+        return '';
+    }
+
+    /**
+     * Where the MCP connection comes from, for the MCP page.
+     *
+     * @return array { file, installed, active, version, bundled_by, endpoint }
+     */
+    public static function adapter_state() {
+        if ( ! function_exists( 'get_plugins' ) ) {
+            require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        }
+        $plugins = get_plugins();
+        $file    = self::adapter_plugin_file();
+        $active  = $file && is_plugin_active( $file );
+
+        // Adapter code loaded without its plugin: find the plugin that bundles it.
+        $bundled_by = '';
+        if ( ! $active && class_exists( '\WP\MCP\Core\McpAdapter' ) ) {
+            $reflection = new \ReflectionClass( '\WP\MCP\Core\McpAdapter' );
+            $path       = wp_normalize_path( (string) $reflection->getFileName() );
+            $root       = trailingslashit( wp_normalize_path( WP_PLUGIN_DIR ) );
+            $bundled_by = __( 'another plugin', 'mme-elementor-kit' );
+            if ( 0 === strpos( $path, $root ) ) {
+                $parts  = explode( '/', substr( $path, strlen( $root ) ) );
+                $folder = $parts[0];
+                foreach ( $plugins as $plugin_file => $data ) {
+                    if ( 0 === strpos( $plugin_file, $folder . '/' ) ) {
+                        $bundled_by = trim( $data['Name'] . ' ' . $data['Version'] );
+                        break;
+                    }
+                }
+            }
+        }
+
+        return array(
+            'file'       => $file,
+            'installed'  => '' !== $file,
+            'active'     => $active,
+            'version'    => $file ? $plugins[ $file ]['Version'] : '',
+            'bundled_by' => $bundled_by,
+            'endpoint'   => self::endpoint_registered(),
+        );
+    }
+
+    /**
+     * "Install & activate" / "Activate" button for the MCP Adapter plugin on the MCP page.
+     * Redirects back to the page with the result (so the next load runs with the plugin active).
+     *
+     * @return void
+     */
+    public function handle_adapter_form() {
+        if ( ! ( isset( $_POST['action'] ) && 'mme_kit_mcp_adapter' === $_POST['action'] ) ) {
+            return;
+        }
+        check_admin_referer( 'mme_kit_mcp_adapter', '_wp_nonce_mcp_adapter' );
+
+        $result = self::install_adapter();
+        if ( is_wp_error( $result ) ) {
+            set_transient( 'mme_kit_mcp_adapter_error_' . get_current_user_id(), $result->get_error_message(), 5 * MINUTE_IN_SECONDS );
+            $status = 'error';
+        } else {
+            $status = $result;
+        }
+
+        wp_safe_redirect( add_query_arg( 'mcp_adapter', $status, admin_url( 'admin.php?page=' . self::PAGE_SLUG ) ) );
+        exit;
+    }
+
+    /**
+     * Install the MCP Adapter plugin from WordPress.org when missing, then activate it.
+     *
+     * @return string|\WP_Error 'installed' (installed and activated), 'activated' or 'active'.
+     */
+    public static function install_adapter() {
+        require_once ABSPATH . 'wp-admin/includes/plugin.php';
+
+        $file      = self::adapter_plugin_file();
+        $installed = false;
+
+        if ( ! $file ) {
+            if ( ! current_user_can( 'install_plugins' ) ) {
+                return new \WP_Error( 'mme_kit_cap', __( 'Your account cannot install plugins.', 'mme-elementor-kit' ) );
+            }
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+            require_once ABSPATH . 'wp-admin/includes/misc.php';
+            require_once ABSPATH . 'wp-admin/includes/plugin-install.php';
+            require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+
+            if ( 'direct' !== get_filesystem_method() ) {
+                return new \WP_Error( 'mme_kit_filesystem', __( 'WordPress needs FTP credentials to install plugins on this server. Use "Install from Plugins" instead.', 'mme-elementor-kit' ) );
+            }
+
+            $api = plugins_api( 'plugin_information', array(
+                'slug'   => self::ADAPTER_SLUG,
+                'fields' => array( 'sections' => false ),
+            ) );
+            if ( is_wp_error( $api ) ) {
+                return $api;
+            }
+
+            $skin     = new \WP_Ajax_Upgrader_Skin();
+            $upgrader = new \Plugin_Upgrader( $skin );
+            $result   = $upgrader->install( $api->download_link );
+
+            if ( is_wp_error( $result ) ) {
+                return $result;
+            }
+            if ( is_wp_error( $skin->result ) ) {
+                return $skin->result;
+            }
+            if ( $skin->get_errors()->has_errors() ) {
+                return $skin->get_errors();
+            }
+            if ( ! $result ) {
+                return new \WP_Error( 'mme_kit_install_failed', __( 'The MCP Adapter plugin could not be installed.', 'mme-elementor-kit' ) );
+            }
+
+            wp_clean_plugins_cache();
+            $file      = $upgrader->plugin_info() ? $upgrader->plugin_info() : self::adapter_plugin_file();
+            $installed = true;
+        }
+
+        if ( ! $file ) {
+            return new \WP_Error( 'mme_kit_install_failed', __( 'The MCP Adapter plugin was installed but its file was not found.', 'mme-elementor-kit' ) );
+        }
+        if ( is_plugin_active( $file ) ) {
+            return 'active';
+        }
+        if ( ! current_user_can( 'activate_plugin', $file ) ) {
+            return new \WP_Error( 'mme_kit_cap', __( 'Your account cannot activate plugins.', 'mme-elementor-kit' ) );
+        }
+
+        $activated = activate_plugin( $file );
+        // With display_errors on, the adapter's harmless "WP_MCP_VERSION already defined" warning (when
+        // Elementor's copy is loaded too) counts as unexpected output, though the plugin is active.
+        if ( is_wp_error( $activated ) && ! ( 'unexpected_output' === $activated->get_error_code() && is_plugin_active( $file ) ) ) {
+            return $activated;
+        }
+
+        return $installed ? 'installed' : 'activated';
+    }
+
+    /**
+     * Result message of the MCP Adapter button, read once after the redirect.
+     *
+     * @return array|null array( type, message )
+     */
+    public static function adapter_notice() {
+        $status = isset( $_GET['mcp_adapter'] ) ? sanitize_key( wp_unslash( $_GET['mcp_adapter'] ) ) : '';
+        switch ( $status ) {
+            case 'installed':
+                return array( 'success', __( 'MCP Adapter installed and activated.', 'mme-elementor-kit' ) );
+            case 'activated':
+                return array( 'success', __( 'MCP Adapter activated.', 'mme-elementor-kit' ) );
+            case 'active':
+                return array( 'success', __( 'MCP Adapter is already active.', 'mme-elementor-kit' ) );
+            case 'error':
+                $key     = 'mme_kit_mcp_adapter_error_' . get_current_user_id();
+                $message = get_transient( $key );
+                delete_transient( $key );
+                return array( 'error', $message ? $message : __( 'The MCP Adapter could not be installed.', 'mme-elementor-kit' ) );
+        }
+        return null;
     }
 
     public function register_category() {

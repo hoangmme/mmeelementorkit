@@ -1180,3 +1180,10 @@
   min-height: 92px;
   resize: vertical;
 }
+
+/* MCP page: MCP Adapter button and hints (1.6.2) */
+.ems-app--mcp .ems-form-actions { align-items: center; flex-wrap: wrap; margin-top: 12px; }
+.ems-app--mcp .ems-steps .ems-alert { margin-top: 10px; }
+.ems-hint { display: block; font-size: 12.5px; line-height: 1.5; color: var(--ems-muted, #64748b); }
+.ems-hint.ems-field { margin-top: 8px; }
+.ems-app--mcp .ems-form-actions .ems-btn { white-space: normal; max-width: 100%; }

@@ -4,7 +4,7 @@ Plugin URI: https://mme.vn
 Tags: elementor, templates, template library, acf, scf
 Requires at least: 5.5
 Requires PHP: 7.2
-Stable tag: 1.6.1
+Stable tag: 1.6.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -27,6 +27,11 @@ Site Master và Client đều cần cài plugin này cùng Elementor.
 Phát triển dựa trên "Elements Share for Elementor" của DivDojo (GPL-2.0+).
 
 == Changelog ==
+
+= 1.6.2 =
+* Fix: MCP & Logs showed "MCP Adapter plugin: Active" on sites without the plugin, because Elementor 4.x bundles a copy of the adapter. The row now says where MCP comes from (the plugin and its version, or "Built into Elementor x.y") and is green only when the MCP endpoint is really registered.
+* New: "Install & activate plugin" button for the official MCP Adapter (from WordPress.org) on the MCP & Logs page, or "Activate plugin" when it is installed but off. Falls back to the WordPress installer when the server needs FTP credentials.
+* New: hint under the application password step: if the new password does not appear, a plugin that hides admin notices is hiding it.
 
 = 1.6.1 =
 * Fix: MCP abilities were registered but refused by the MCP Adapter ("not exposed via MCP (mcp.public!=true)"). They are now flagged meta.mcp.public, so MCP clients can call them.

@@ -12,6 +12,25 @@ $log         = Ems_Debug_Log::get_instance();
 $user        = wp_get_current_user();
 $server_name = 'wp-' . trim( preg_replace( '/[^a-z0-9]+/', '-', strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) ), '-' );
 
+// MCP Adapter: its own plugin, or the copy bundled in Elementor 4.x. What counts is whether the endpoint answers.
+$adapter        = Ems_Mcp_Abilities::adapter_state();
+$adapter_notice = Ems_Mcp_Abilities::adapter_notice();
+if ( $adapter['active'] ) {
+    /* translators: %s: plugin version */
+    $adapter_value = sprintf( __( 'Plugin active (v%s)', 'mme-elementor-kit' ), $adapter['version'] );
+} elseif ( $adapter['bundled_by'] && $adapter['endpoint'] ) {
+    /* translators: %s: plugin that bundles the MCP Adapter, e.g. "Elementor 4.3.5" */
+    $adapter_value = sprintf( __( 'Built into %s', 'mme-elementor-kit' ), $adapter['bundled_by'] );
+} elseif ( $adapter['installed'] ) {
+    $adapter_value = __( 'Installed, not active', 'mme-elementor-kit' );
+} else {
+    $adapter_value = __( 'Not installed', 'mme-elementor-kit' );
+}
+$adapter_button = '';
+if ( ! $adapter['active'] && current_user_can( $adapter['installed'] ? 'activate_plugins' : 'install_plugins' ) ) {
+    $adapter_button = $adapter['installed'] ? __( 'Activate plugin', 'mme-elementor-kit' ) : __( 'Install & activate plugin', 'mme-elementor-kit' );
+}
+
 $requirements = array(
     array(
         'label' => __( 'WordPress 6.9+ (Abilities API)', 'mme-elementor-kit' ),
@@ -23,11 +42,10 @@ $requirements = array(
         'ok'    => version_compare( PHP_VERSION, '7.4', '>=' ),
         'value' => PHP_VERSION,
     ),
-    array(
-        'label' => __( 'MCP Adapter plugin', 'mme-elementor-kit' ),
-        'ok'    => Ems_Mcp_Abilities::mcp_adapter_active(),
-        'value' => Ems_Mcp_Abilities::mcp_adapter_active() ? __( 'Active', 'mme-elementor-kit' ) : __( 'Not active', 'mme-elementor-kit' ),
-        'link'  => Ems_Mcp_Abilities::mcp_adapter_active() ? '' : admin_url( 'plugin-install.php?s=mcp-adapter&tab=search&type=term' ),
+    'adapter' => array(
+        'label' => __( 'MCP Adapter', 'mme-elementor-kit' ),
+        'ok'    => $adapter['endpoint'],
+        'value' => $adapter_value,
     ),
     array(
         'label' => __( 'Application passwords', 'mme-elementor-kit' ),
@@ -65,28 +83,51 @@ $capture_until = $log->capture_until();
                 <h2 class="ems-card__title"><?php echo esc_html__( 'Connect', 'mme-elementor-kit' ); ?></h2>
                 <ol class="ems-steps">
                     <li>
-                        <?php echo esc_html__( 'Check the requirements below. Install and activate the official "MCP Adapter" plugin (by WordPress.org).', 'mme-elementor-kit' ); ?>
+                        <?php echo esc_html__( 'Check the requirements below. The connection uses the official "MCP Adapter" by WordPress.org: its own plugin, or the copy built into Elementor 4.x.', 'mme-elementor-kit' ); ?>
+                        <?php if ( $adapter_notice ) : ?>
+                            <div class="ems-alert ems-alert--<?php echo esc_attr( $adapter_notice[0] ); ?> ems-field">
+                                <span class="dashicons <?php echo 'success' === $adapter_notice[0] ? 'dashicons-yes-alt' : 'dashicons-warning'; ?>"></span>
+                                <?php echo esc_html( $adapter_notice[1] ); ?>
+                            </div>
+                        <?php endif; ?>
                         <ul class="ems-meta ems-field">
-                            <?php foreach ( $requirements as $item ) : ?>
+                            <?php foreach ( $requirements as $key => $item ) : ?>
                                 <li>
                                     <span>
                                         <span class="dashicons <?php echo $item['ok'] ? 'dashicons-yes-alt ems-text-green' : 'dashicons-warning ems-text-muted'; ?>"></span>
                                         <?php echo esc_html( $item['label'] ); ?>
                                     </span>
-                                    <strong>
-                                        <?php if ( ! empty( $item['link'] ) ) : ?>
-                                            <a class="ems-link" href="<?php echo esc_url( $item['link'] ); ?>"><?php echo esc_html__( 'Install', 'mme-elementor-kit' ); ?></a>
-                                        <?php else : ?>
-                                            <?php echo esc_html( $item['value'] ); ?>
-                                        <?php endif; ?>
-                                    </strong>
+                                    <strong><?php echo esc_html( $item['value'] ); ?></strong>
                                 </li>
                             <?php endforeach; ?>
                         </ul>
+                        <?php if ( $adapter_button ) : ?>
+                            <form method="POST" action="" class="ems-form-actions ems-field">
+                                <?php wp_nonce_field( 'mme_kit_mcp_adapter', '_wp_nonce_mcp_adapter' ); ?>
+                                <input type="hidden" name="action" value="mme_kit_mcp_adapter">
+                                <button type="submit" class="ems-btn <?php echo $adapter['endpoint'] ? 'ems-btn--secondary' : 'ems-btn--primary'; ?>">
+                                    <span class="dashicons dashicons-admin-plugins"></span>
+                                    <?php echo esc_html( $adapter_button ); ?>
+                                </button>
+                                <?php if ( ! $adapter['installed'] ) : ?>
+                                    <a class="ems-link" href="<?php echo esc_url( wp_nonce_url( self_admin_url( 'update.php?action=install-plugin&plugin=' . Ems_Mcp_Abilities::ADAPTER_SLUG ), 'install-plugin_' . Ems_Mcp_Abilities::ADAPTER_SLUG ) ); ?>"><?php echo esc_html__( 'Install from Plugins ↗', 'mme-elementor-kit' ); ?></a>
+                                <?php endif; ?>
+                            </form>
+                            <?php if ( $adapter['endpoint'] && $adapter['bundled_by'] ) : ?>
+                                <p class="ems-note">
+                                    <span class="dashicons dashicons-info-outline"></span>
+                                    <?php
+                                    /* translators: %s: plugin that bundles the MCP Adapter */
+                                    echo esc_html( sprintf( __( 'Optional: MCP already works through %s. The separate plugin keeps the connection working if that plugin is turned off or stops bundling it.', 'mme-elementor-kit' ), $adapter['bundled_by'] ) );
+                                    ?>
+                                </p>
+                            <?php endif; ?>
+                        <?php endif; ?>
                     </li>
                     <li>
                         <?php echo esc_html__( 'Create an application password for an administrator (a separate admin account just for the AI is safest).', 'mme-elementor-kit' ); ?>
                         <a class="ems-link" href="<?php echo esc_url( admin_url( 'profile.php#application-passwords-section' ) ); ?>"><?php echo esc_html__( 'Profile → Application Passwords ↗', 'mme-elementor-kit' ); ?></a>
+                        <span class="ems-hint ems-field"><?php echo esc_html__( 'The password is shown once, in a green box above the list. If nothing appears after clicking "Add New Application Password", a plugin that hides admin notices is hiding it: turn that off for a moment (MMe Core 1.1.1+ no longer hides it).', 'mme-elementor-kit' ); ?></span>
                     </li>
                     <li>
                         <?php echo esc_html__( 'Paste the application password here to build the command (it stays in this browser), then run the command in a terminal on your computer:', 'mme-elementor-kit' ); ?>
