@@ -4,7 +4,7 @@ Plugin URI: https://mme.vn
 Tags: elementor, templates, template library, acf, scf
 Requires at least: 5.5
 Requires PHP: 7.2
-Stable tag: 1.6.2
+Stable tag: 1.6.3
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -27,6 +27,9 @@ Site Master và Client đều cần cài plugin này cùng Elementor.
 Phát triển dựa trên "Elements Share for Elementor" của DivDojo (GPL-2.0+).
 
 == Changelog ==
+
+= 1.6.3 =
+* New: MCP ability mme-kit/update-element: change the settings of one element on an Elementor page (e.g. the code of an HTML widget, a heading's text) and save it like the editor, with a revision kept for History. Returns the previous values as a backup; dry_run previews the change. Needs an administrator who can edit that post.
 
 = 1.6.2 =
 * Fix: MCP & Logs showed "MCP Adapter plugin: Active" on sites without the plugin, because Elementor 4.x bundles a copy of the adapter. The row now says where MCP comes from (the plugin and its version, or "Built into Elementor x.y") and is green only when the MCP endpoint is really registered.

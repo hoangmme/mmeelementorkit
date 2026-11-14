@@ -362,6 +362,26 @@ class Ems_Mcp_Abilities {
                 'permission_callback' => $admin,
                 'annotations'         => array( 'readonly' => false, 'destructive' => false, 'idempotent' => true ),
             ),
+            'mme-kit/update-element'         => array(
+                'label'               => __( 'Update Elementor element', 'mme-elementor-kit' ),
+                'description'         => __( 'Change the settings of one element (widget, container, ...) already on an Elementor page and save the page like the editor does (a revision is kept, so it can be restored from the editor History). Settings are merged into the current ones; the previous values of every changed key are returned as a backup. Use dry_run to preview.', 'mme-elementor-kit' ),
+                'input_schema'        => array(
+                    'type'       => 'object',
+                    'properties' => array(
+                        'post_id'    => array( 'type' => 'integer', 'minimum' => 1 ),
+                        'element_id' => array( 'type' => 'string', 'description' => 'Element id, from mme-kit/inspect-elementor-page.' ),
+                        'settings'   => array( 'type' => 'object', 'description' => 'Settings to set, e.g. {"html": "..."} for an HTML widget or {"title": "..."} for a heading. A null value removes the key.' ),
+                        'dry_run'    => array( 'type' => 'boolean', 'default' => false, 'description' => 'Return what would change without saving.' ),
+                    ),
+                    'required'   => array( 'post_id', 'element_id', 'settings' ),
+                ),
+                'execute_callback'    => array( $this, 'update_element' ),
+                'permission_callback' => function ( $input = array() ) {
+                    $post_id = isset( $input['post_id'] ) ? absint( $input['post_id'] ) : 0;
+                    return current_user_can( 'manage_options' ) && $post_id && current_user_can( 'edit_post', $post_id );
+                },
+                'annotations'         => array( 'readonly' => false, 'destructive' => false, 'idempotent' => true ),
+            ),
             'mme-kit/check-update'           => array(
                 'label'               => __( 'Check for update', 'mme-elementor-kit' ),
                 'description'         => __( 'Compare the installed MMe Elementor Kit with the latest version on GitHub (skips the cache).', 'mme-elementor-kit' ),
@@ -702,6 +722,104 @@ class Ems_Mcp_Abilities {
             }
         }
         return null;
+    }
+
+    public function update_element( $input = array() ) {
+        if ( ! class_exists( '\Elementor\Plugin' ) ) {
+            return new \WP_Error( 'mme_kit_no_elementor', 'Elementor is not active.' );
+        }
+        $post_id    = isset( $input['post_id'] ) ? absint( $input['post_id'] ) : 0;
+        $element_id = isset( $input['element_id'] ) ? (string) $input['element_id'] : '';
+        $changes    = isset( $input['settings'] ) && is_array( $input['settings'] ) ? $input['settings'] : array();
+        if ( ! $changes ) {
+            return new \WP_Error( 'mme_kit_no_settings', 'settings is empty.' );
+        }
+
+        $document = \Elementor\Plugin::$instance->documents->get( $post_id, false );
+        if ( ! $document || ! $document->is_built_with_elementor() ) {
+            return new \WP_Error( 'mme_kit_not_elementor', 'This post is not built with Elementor.' );
+        }
+
+        $data     = $document->get_elements_data();
+        $previous = array();
+        $type     = '';
+        $found    = $this->apply_settings( $data, $element_id, $changes, $previous, $type );
+        if ( ! $found ) {
+            return new \WP_Error( 'mme_kit_not_found', 'Element not found on this post.' );
+        }
+
+        $changed = array();
+        foreach ( $changes as $key => $value ) {
+            if ( ! array_key_exists( $key, $previous ) || $previous[ $key ] !== $value ) {
+                $changed[] = $key;
+            }
+        }
+
+        $result = array(
+            'post_id'  => $post_id,
+            'element'  => $element_id,
+            'type'     => $type,
+            'changed'  => $changed,
+            'previous' => $previous,
+            'saved'    => false,
+        );
+        if ( ! empty( $input['dry_run'] ) || ! $changed ) {
+            return $this->limit_size( $result );
+        }
+
+        $saved = $document->save( array( 'elements' => $data ) );
+        if ( ! $saved ) {
+            return new \WP_Error( 'mme_kit_save_failed', 'Elementor did not save the page.' );
+        }
+
+        // Check what was stored (sanitizing can drop values, e.g. HTML for users without unfiltered_html).
+        $document = \Elementor\Plugin::$instance->documents->get( $post_id, false );
+        $stored   = $this->find_element( $document->get_elements_data(), $element_id );
+        $mismatch = array();
+        foreach ( $changed as $key ) {
+            $now = isset( $stored['settings'][ $key ] ) ? $stored['settings'][ $key ] : null;
+            if ( $now !== $changes[ $key ] ) {
+                $mismatch[] = $key;
+            }
+        }
+
+        $result['saved']     = true;
+        $result['not_as_sent'] = $mismatch;
+        $result['link']      = get_permalink( $post_id );
+        return $this->limit_size( $result );
+    }
+
+    /**
+     * Merge settings into the element with this id, in place.
+     *
+     * @param array  $items     Elements tree (by reference).
+     * @param string $id
+     * @param array  $changes   Settings to set; null removes the key.
+     * @param array  $previous  Filled with the old value of every key in $changes (null when unset).
+     * @param string $type      Filled with the widget type or element type.
+     * @return boolean Found.
+     */
+    private function apply_settings( &$items, $id, $changes, &$previous, &$type ) {
+        foreach ( $items as &$item ) {
+            if ( isset( $item['id'] ) && $item['id'] === $id ) {
+                $settings = isset( $item['settings'] ) && is_array( $item['settings'] ) ? $item['settings'] : array();
+                foreach ( $changes as $key => $value ) {
+                    $previous[ $key ] = array_key_exists( $key, $settings ) ? $settings[ $key ] : null;
+                    if ( null === $value ) {
+                        unset( $settings[ $key ] );
+                    } else {
+                        $settings[ $key ] = $value;
+                    }
+                }
+                $item['settings'] = $settings;
+                $type             = ! empty( $item['widgetType'] ) ? $item['widgetType'] : $item['elType'];
+                return true;
+            }
+            if ( ! empty( $item['elements'] ) && $this->apply_settings( $item['elements'], $id, $changes, $previous, $type ) ) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public function clear_elementor_cache() {
