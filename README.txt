@@ -4,7 +4,7 @@ Plugin URI: https://mme.vn
 Tags: elementor, templates, template library, acf, scf
 Requires at least: 5.5
 Requires PHP: 7.2
-Stable tag: 1.7.0
+Stable tag: 1.7.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -27,6 +27,9 @@ Site Master và Client đều cần cài plugin này cùng Elementor.
 Phát triển dựa trên "Elements Share for Elementor" của DivDojo (GPL-2.0+).
 
 == Changelog ==
+
+= 1.7.1 =
+* New: MCP abilities mme-kit/insert-element (add a widget or a container before / after / inside an element, or at the start / end of a page, with fresh ids) and mme-kit/remove-element (returns the removed element as a backup). Both save like the editor, with a revision, and need manage_options plus edit rights on the post.
 
 = 1.7.0 =
 * New: AI layout generator on MMe Kit → MCP, AI & Logs. Describe a section or a page and pick a type (landing page, hero, features, services, process, team, pricing, FAQ, call to action); the AI builds it with Elementor containers and core widgets (heading, text, button, image, icon box, icon list) using the site's global colors, as a new template or at the end of an Elementor page (with a revision to undo).

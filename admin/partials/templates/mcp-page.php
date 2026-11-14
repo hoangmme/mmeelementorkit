@@ -167,7 +167,7 @@ $capture_until = $log->capture_until();
                 </ul>
                 <p class="ems-note">
                     <span class="dashicons dashicons-info-outline"></span>
-                    <?php echo esc_html__( 'The MCP Adapter also lists the abilities of WordPress core and other plugins. MMe Kit tools only read data, except capture mode, clearing the Elementor cache, editing an element (update-element, which keeps a revision) and installing MMe Kit updates.', 'mme-elementor-kit' ); ?>
+                    <?php echo esc_html__( 'The MCP Adapter also lists the abilities of WordPress core and other plugins. MMe Kit tools only read data, except capture mode, clearing the Elementor cache, editing, adding or removing an element (update-element, insert-element, remove-element, which keep a revision) and installing MMe Kit updates.', 'mme-elementor-kit' ); ?>
                 </p>
             </div>
         </main>

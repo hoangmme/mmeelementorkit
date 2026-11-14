@@ -281,6 +281,10 @@ class Ems_Mcp_Abilities {
         $admin = function () {
             return current_user_can( 'manage_options' );
         };
+        $editor = function ( $input = array() ) {
+            $post_id = isset( $input['post_id'] ) ? absint( $input['post_id'] ) : 0;
+            return current_user_can( 'manage_options' ) && $post_id && current_user_can( 'edit_post', $post_id );
+        };
 
         return array(
             'mme-kit/site-info'              => array(
@@ -381,6 +385,40 @@ class Ems_Mcp_Abilities {
                     return current_user_can( 'manage_options' ) && $post_id && current_user_can( 'edit_post', $post_id );
                 },
                 'annotations'         => array( 'readonly' => false, 'destructive' => false, 'idempotent' => true ),
+            ),
+            'mme-kit/insert-element'         => array(
+                'label'               => __( 'Insert Elementor element', 'mme-elementor-kit' ),
+                'description'         => __( 'Add a new element (a widget such as {"elType":"widget","widgetType":"html","settings":{"html":"..."}}, or a container with child "elements") to an Elementor page, before / after an existing element, inside a container, or at the start / end of the page. New ids are generated. The page is saved like the editor does (a revision is kept). Remove it again with mme-kit/remove-element. Use dry_run to preview.', 'mme-elementor-kit' ),
+                'input_schema'        => array(
+                    'type'       => 'object',
+                    'properties' => array(
+                        'post_id'  => array( 'type' => 'integer', 'minimum' => 1 ),
+                        'element'  => array( 'type' => 'object', 'description' => 'Element data: elType (container | widget), widgetType for widgets, settings, elements (children of a container).' ),
+                        'position' => array( 'type' => 'string', 'enum' => array( 'before', 'after', 'inside_start', 'inside_end', 'page_start', 'page_end' ), 'default' => 'after' ),
+                        'target'   => array( 'type' => 'string', 'description' => 'Element id the position refers to (not needed for page_start / page_end).' ),
+                        'dry_run'  => array( 'type' => 'boolean', 'default' => false ),
+                    ),
+                    'required'   => array( 'post_id', 'element' ),
+                ),
+                'execute_callback'    => array( $this, 'insert_element' ),
+                'permission_callback' => $editor,
+                'annotations'         => array( 'readonly' => false, 'destructive' => false, 'idempotent' => false ),
+            ),
+            'mme-kit/remove-element'         => array(
+                'label'               => __( 'Remove Elementor element', 'mme-elementor-kit' ),
+                'description'         => __( 'Remove one element (and its children) from an Elementor page and save it like the editor does (a revision is kept). The removed element data is returned as a backup, with its parent and index, so it can be inserted again.', 'mme-elementor-kit' ),
+                'input_schema'        => array(
+                    'type'       => 'object',
+                    'properties' => array(
+                        'post_id'    => array( 'type' => 'integer', 'minimum' => 1 ),
+                        'element_id' => array( 'type' => 'string' ),
+                        'dry_run'    => array( 'type' => 'boolean', 'default' => false ),
+                    ),
+                    'required'   => array( 'post_id', 'element_id' ),
+                ),
+                'execute_callback'    => array( $this, 'remove_element' ),
+                'permission_callback' => $editor,
+                'annotations'         => array( 'readonly' => false, 'destructive' => true, 'idempotent' => false ),
             ),
             'mme-kit/check-update'           => array(
                 'label'               => __( 'Check for update', 'mme-elementor-kit' ),
@@ -820,6 +858,211 @@ class Ems_Mcp_Abilities {
             }
         }
         return false;
+    }
+
+    /**
+     * Elementor document of a post, or an error.
+     *
+     * @param integer $post_id
+     * @return \Elementor\Core\Base\Document|\WP_Error
+     */
+    private function elementor_document( $post_id ) {
+        if ( ! class_exists( '\Elementor\Plugin' ) ) {
+            return new \WP_Error( 'mme_kit_no_elementor', 'Elementor is not active.' );
+        }
+        $document = \Elementor\Plugin::$instance->documents->get( $post_id, false );
+        if ( ! $document || ! $document->is_built_with_elementor() ) {
+            return new \WP_Error( 'mme_kit_not_elementor', 'This post is not built with Elementor.' );
+        }
+        return $document;
+    }
+
+    /**
+     * Clean element data from the input: known keys only, fresh ids.
+     *
+     * @param mixed   $element
+     * @param integer $depth
+     * @return array|\WP_Error
+     */
+    private function prepare_element( $element, $depth = 0 ) {
+        if ( ! is_array( $element ) || $depth > 12 ) {
+            return new \WP_Error( 'mme_kit_bad_element', 'element must be an object (at most 12 levels deep).' );
+        }
+        $el_type = isset( $element['elType'] ) ? (string) $element['elType'] : '';
+        if ( ! in_array( $el_type, array( 'container', 'widget', 'section', 'column' ), true ) ) {
+            return new \WP_Error( 'mme_kit_bad_element', 'elType must be container or widget.' );
+        }
+        $clean = array(
+            'id'       => \Elementor\Utils::generate_random_string(),
+            'elType'   => $el_type,
+            'settings' => isset( $element['settings'] ) && is_array( $element['settings'] ) ? $element['settings'] : array(),
+            'elements' => array(),
+        );
+        if ( 'widget' === $el_type ) {
+            $widget = isset( $element['widgetType'] ) ? (string) $element['widgetType'] : '';
+            if ( ! $widget || ! \Elementor\Plugin::$instance->widgets_manager->get_widget_types( $widget ) ) {
+                return new \WP_Error( 'mme_kit_bad_widget', 'Unknown widgetType: ' . $widget );
+            }
+            $clean['widgetType'] = $widget;
+            return $clean;
+        }
+        if ( ! empty( $element['isInner'] ) ) {
+            $clean['isInner'] = true;
+        }
+        foreach ( isset( $element['elements'] ) && is_array( $element['elements'] ) ? $element['elements'] : array() as $child ) {
+            $child = $this->prepare_element( $child, $depth + 1 );
+            if ( is_wp_error( $child ) ) {
+                return $child;
+            }
+            $clean['elements'][] = $child;
+        }
+        return $clean;
+    }
+
+    /**
+     * Ids of an element and all its children.
+     *
+     * @param array $element
+     * @return array
+     */
+    private function element_ids( $element ) {
+        $ids = array( $element['id'] );
+        foreach ( $element['elements'] as $child ) {
+            $ids = array_merge( $ids, $this->element_ids( $child ) );
+        }
+        return $ids;
+    }
+
+    /**
+     * Put $new next to / inside the element with id $target, in place.
+     *
+     * @return boolean Placed.
+     */
+    private function place_element( &$items, $target, $position, $new ) {
+        foreach ( $items as $index => &$item ) {
+            if ( isset( $item['id'] ) && $item['id'] === $target ) {
+                if ( 'before' === $position || 'after' === $position ) {
+                    array_splice( $items, 'before' === $position ? $index : $index + 1, 0, array( $new ) );
+                    return true;
+                }
+                if ( isset( $item['elType'] ) && 'widget' === $item['elType'] ) {
+                    return false;
+                }
+                $children = isset( $item['elements'] ) && is_array( $item['elements'] ) ? $item['elements'] : array();
+                if ( 'inside_start' === $position ) {
+                    array_unshift( $children, $new );
+                } else {
+                    $children[] = $new;
+                }
+                $item['elements'] = $children;
+                return true;
+            }
+            if ( ! empty( $item['elements'] ) && $this->place_element( $item['elements'], $target, $position, $new ) ) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public function insert_element( $input = array() ) {
+        $post_id  = isset( $input['post_id'] ) ? absint( $input['post_id'] ) : 0;
+        $document = $this->elementor_document( $post_id );
+        if ( is_wp_error( $document ) ) {
+            return $document;
+        }
+        $element = $this->prepare_element( isset( $input['element'] ) ? $input['element'] : null );
+        if ( is_wp_error( $element ) ) {
+            return $element;
+        }
+        if ( 'widget' === $element['elType'] && ! empty( $input['position'] ) && in_array( $input['position'], array( 'page_start', 'page_end' ), true ) ) {
+            return new \WP_Error( 'mme_kit_bad_position', 'A widget cannot be at the top level of a page; put it in a container.' );
+        }
+
+        $position = isset( $input['position'] ) ? (string) $input['position'] : 'after';
+        $target   = isset( $input['target'] ) ? (string) $input['target'] : '';
+        $data     = $document->get_elements_data();
+
+        if ( 'page_start' === $position ) {
+            array_unshift( $data, $element );
+        } elseif ( 'page_end' === $position ) {
+            $data[] = $element;
+        } elseif ( ! $target || ! $this->place_element( $data, $target, $position, $element ) ) {
+            return new \WP_Error( 'mme_kit_not_found', 'Target element not found on this post (or it is a widget, which cannot hold children).' );
+        }
+
+        $result = array(
+            'post_id'  => $post_id,
+            'inserted' => $element['id'],
+            'ids'      => $this->element_ids( $element ),
+            'position' => $position,
+            'target'   => $target,
+            'saved'    => false,
+        );
+        if ( ! empty( $input['dry_run'] ) ) {
+            return $result;
+        }
+        if ( ! $document->save( array( 'elements' => $data ) ) ) {
+            return new \WP_Error( 'mme_kit_save_failed', 'Elementor did not save the page.' );
+        }
+        $document        = \Elementor\Plugin::$instance->documents->get( $post_id, false );
+        $result['saved'] = (bool) $this->find_element( $document->get_elements_data(), $element['id'] );
+        $result['link']  = get_permalink( $post_id );
+        return $result;
+    }
+
+    /**
+     * Take the element with this id out of the tree, in place.
+     *
+     * @return array|null [ element, parent id or '', index ].
+     */
+    private function cut_element( &$items, $id, $parent = '' ) {
+        foreach ( $items as $index => &$item ) {
+            if ( isset( $item['id'] ) && $item['id'] === $id ) {
+                $removed = $item;
+                array_splice( $items, $index, 1 );
+                return array( $removed, $parent, $index );
+            }
+            if ( ! empty( $item['elements'] ) ) {
+                $found = $this->cut_element( $item['elements'], $id, $item['id'] );
+                if ( $found ) {
+                    return $found;
+                }
+            }
+        }
+        return null;
+    }
+
+    public function remove_element( $input = array() ) {
+        $post_id  = isset( $input['post_id'] ) ? absint( $input['post_id'] ) : 0;
+        $document = $this->elementor_document( $post_id );
+        if ( is_wp_error( $document ) ) {
+            return $document;
+        }
+        $element_id = isset( $input['element_id'] ) ? (string) $input['element_id'] : '';
+        $data       = $document->get_elements_data();
+        $cut        = $element_id ? $this->cut_element( $data, $element_id ) : null;
+        if ( ! $cut ) {
+            return new \WP_Error( 'mme_kit_not_found', 'Element not found on this post.' );
+        }
+
+        $result = array(
+            'post_id' => $post_id,
+            'removed' => $cut[0],
+            'parent'  => $cut[1],
+            'index'   => $cut[2],
+            'saved'   => false,
+        );
+        if ( empty( $input['dry_run'] ) ) {
+            if ( ! $document->save( array( 'elements' => $data ) ) ) {
+                return new \WP_Error( 'mme_kit_save_failed', 'Elementor did not save the page.' );
+            }
+            $result['saved'] = true;
+        }
+        $size = strlen( (string) wp_json_encode( $result ) );
+        if ( $size > self::MAX_OUTPUT ) {
+            $result['removed'] = array( 'id' => $cut[0]['id'], 'elType' => $cut[0]['elType'], 'note' => 'Too large to return (' . $size . ' bytes); restore it from the editor History.' );
+        }
+        return $result;
     }
 
     public function clear_elementor_cache() {
