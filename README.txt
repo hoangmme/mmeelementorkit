@@ -4,7 +4,7 @@ Plugin URI: https://mme.vn
 Tags: elementor, templates, template library, acf, scf
 Requires at least: 5.5
 Requires PHP: 7.2
-Stable tag: 1.9.3
+Stable tag: 1.9.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -28,6 +28,10 @@ Site Master và Client đều cần cài plugin này cùng Elementor.
 Phát triển dựa trên "Elements Share for Elementor" của DivDojo (GPL-2.0+).
 
 == Changelog ==
+
+= 1.9.4 =
+* Fixed: the "See plans & pricing" link keeps its #section anchor at the end, after the tracking parameters.
+* Changed: the fallback pricing link is the MMe Chatbot AI service page.
 
 = 1.9.3 =
 * Changed: when the month's AI pages are used up, MMe AI offers "Message MMe on Zalo", "See plans & pricing" and the MMe phone number to call (sent by the MMe service, so they can change without a plugin update).

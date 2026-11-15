@@ -244,7 +244,9 @@
 		if ( ! base || ! /^https?:\/\//.test( base ) ) {
 			return '';
 		}
-		return base + ( base.indexOf( '?' ) === -1 ? '?' : '&' ) + 'site=' + encodeURIComponent( data.site || '' ) + '&from=mme-ai';
+		var hash = base.indexOf( '#' ) === -1 ? '' : base.slice( base.indexOf( '#' ) );
+		base = base.slice( 0, base.length - hash.length );
+		return base + ( base.indexOf( '?' ) === -1 ? '?' : '&' ) + 'site=' + encodeURIComponent( data.site || '' ) + '&from=mme-ai' + hash;
 	}
 
 	/** Out of pages (or not in the plan): no Generate, a clear way to upgrade instead. */

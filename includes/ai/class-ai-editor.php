@@ -61,7 +61,7 @@ class Ems_Ai_Editor {
             'logo'        => $this->asset_url( 'admin/img/mme-logo.webp' ),
             'settingsUrl' => admin_url( 'admin.php?page=mme-elementor-kit-mcp#mme-ai' ),
             'site'        => wp_parse_url( home_url(), PHP_URL_HOST ),
-            'upgradeUrl'  => 'https://mme.vn',
+            'upgradeUrl'  => 'https://mme.vn/dich-vu/chatbot-ai-doanh-nghiep/#bang-gia',
             // Fallbacks; the MMe service sends the current ones with the usage.
             'supportPhone'   => '0906 220 284',
             'supportZaloUrl' => 'https://zalo.me/0906220284',
