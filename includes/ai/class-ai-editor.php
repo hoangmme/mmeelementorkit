@@ -60,6 +60,8 @@ class Ems_Ai_Editor {
             'icon'        => $this->asset_url( 'admin/img/mme-ai-icon.svg' ),
             'logo'        => $this->asset_url( 'admin/img/mme-logo.webp' ),
             'settingsUrl' => admin_url( 'admin.php?page=mme-elementor-kit-mcp#mme-ai' ),
+            'site'        => wp_parse_url( home_url(), PHP_URL_HOST ),
+            'upgradeUrl'  => 'https://mme.vn',
             'canHtml'     => current_user_can( 'unfiltered_html' ),
             'usage'       => $usage,
             'kinds'       => Ems_Ai_Layout::kinds(),
@@ -97,6 +99,14 @@ class Ems_Ai_Editor {
                 /* translators: 1: used, 2: monthly limit */
                 'usage'         => __( '%1$d / %2$d this month', 'mme-elementor-kit' ),
                 'settings'      => __( 'MMe Kit settings', 'mme-elementor-kit' ),
+                /* translators: 1: plan name, 2: used, 3: monthly limit */
+                'usagePlan'     => __( '%1$s · %2$d / %3$d pages this month', 'mme-elementor-kit' ),
+                /* translators: %d: pages left */
+                'fewLeft'       => __( 'Only %d AI page(s) left this month.', 'mme-elementor-kit' ),
+                'limitTitle'    => __( 'This month\'s AI pages are used up', 'mme-elementor-kit' ),
+                'limitText'     => __( 'Your plan\'s pages renew on the 1st of next month. Upgrade your plan or buy extra pages from MMe to keep creating now.', 'mme-elementor-kit' ),
+                'upgrade'       => __( 'Upgrade plan', 'mme-elementor-kit' ),
+                'notInPlan'     => __( 'AI pages are not included in your current plan.', 'mme-elementor-kit' ),
             ),
         ) );
     }
@@ -156,7 +166,12 @@ class Ems_Ai_Editor {
             'primary_color' => Ems_Ai_Layout::get_instance()->brand_color(),
         ) );
         if ( is_wp_error( $job ) ) {
-            wp_send_json_error( array( 'message' => $job->get_error_message(), 'code' => $job->get_error_code() ), 400 );
+            $extra = $job->get_error_data();
+            wp_send_json_error( array(
+                'message'     => $job->get_error_message(),
+                'code'        => str_replace( 'mme_kit_ai_', '', $job->get_error_code() ),
+                'upgrade_url' => is_array( $extra ) && ! empty( $extra['upgrade_url'] ) ? $extra['upgrade_url'] : '',
+            ), 400 );
         }
         wp_send_json_success( array( 'job' => $job['id'], 'usage' => $job['usage'] ) );
     }

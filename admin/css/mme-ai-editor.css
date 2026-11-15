@@ -143,3 +143,19 @@
 @media (max-width: 600px) {
 	.mme-ai-modes { grid-template-columns: 1fr; }
 }
+.mme-ai-usage.is-warn { background: #fef3c7; color: #92400e; }
+.mme-ai-usage.is-over { background: #fee2e2; color: #991b1b; }
+.mme-ai-limit {
+	display: grid;
+	gap: 8px;
+	justify-items: start;
+	padding: 18px;
+	border-radius: 12px;
+	background: linear-gradient(135deg, #e8f7fc, #eef4ff);
+	border: 1px solid #cfe2ff;
+}
+.mme-ai-limit[hidden] { display: none; }
+.mme-ai-limit-title { font-size: 15px; color: #0f172a; }
+.mme-ai-limit-text { margin: 0; font-size: 13px; color: #334155; line-height: 1.5; }
+.mme-ai-limit-text:empty { display: none; }
+.mme-ai-limit a.mme-ai-btn { text-decoration: none; display: inline-block; }

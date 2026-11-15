@@ -206,9 +206,11 @@ class Ems_Ai_Client {
 
     private static function clean_usage( $usage ) {
         return array(
-            'used'   => isset( $usage['used'] ) ? (int) $usage['used'] : 0,
-            'quota'  => isset( $usage['quota'] ) ? (int) $usage['quota'] : 0,
-            'period' => isset( $usage['period'] ) ? sanitize_text_field( $usage['period'] ) : '',
+            'used'        => isset( $usage['used'] ) ? (int) $usage['used'] : 0,
+            'quota'       => isset( $usage['quota'] ) ? (int) $usage['quota'] : 0,
+            'period'      => isset( $usage['period'] ) ? sanitize_text_field( $usage['period'] ) : '',
+            'plan_label'  => isset( $usage['plan_label'] ) ? sanitize_text_field( $usage['plan_label'] ) : '',
+            'upgrade_url' => isset( $usage['upgrade_url'] ) ? esc_url_raw( $usage['upgrade_url'] ) : '',
         );
     }
 
@@ -282,7 +284,14 @@ class Ems_Ai_Client {
         $reason = isset( $detail['code'] ) ? sanitize_key( $detail['code'] ) : '';
         $text   = isset( $detail['message'] ) ? sanitize_text_field( $detail['message'] ) : '';
         if ( $reason ) {
-            return self::error( $reason, $text );
+            $error = self::error( $reason, $text );
+            if ( ! empty( $detail['upgrade_url'] ) ) {
+                $error->add_data( array( 'upgrade_url' => esc_url_raw( $detail['upgrade_url'] ) ) );
+                if ( ! empty( $detail['usage'] ) && is_array( $detail['usage'] ) ) {
+                    self::update_data( array( 'usage' => self::clean_usage( $detail['usage'] ) ) );
+                }
+            }
+            return $error;
         }
         if ( 401 === $code || 403 === $code ) {
             return self::error( 'invalid_key' );

@@ -4,7 +4,7 @@ Plugin URI: https://mme.vn
 Tags: elementor, templates, template library, acf, scf
 Requires at least: 5.5
 Requires PHP: 7.2
-Stable tag: 1.9.1
+Stable tag: 1.9.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -28,6 +28,10 @@ Site Master và Client đều cần cài plugin này cùng Elementor.
 Phát triển dựa trên "Elements Share for Elementor" của DivDojo (GPL-2.0+).
 
 == Changelog ==
+
+= 1.9.2 =
+* New: MMe AI shows the MMe plan and this month's pages ("Miễn phí · 2 / 3 pages this month"), turns orange when few are left and red when used up.
+* New: when the month's AI pages are used up (or AI pages are not in the plan), the dialog shows an "Upgrade plan" button to MMe instead of Generate, with the site's domain in the link.
 
 = 1.9.1 =
 * Changed: MMe AI uses the MMe logo and its blue (#00A8D8 → #0068F8) for the button, active choices and the Generate button.

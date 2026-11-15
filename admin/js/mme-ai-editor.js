@@ -148,6 +148,11 @@
 						'</div>' +
 						'<label class="mme-ai-check mme-ai-form"><input type="checkbox" class="mme-ai-knowledge" checked> ' + _.escape( t.useKnowledge ) + '</label>' +
 						'<div class="mme-ai-preview" hidden><iframe title="Preview" sandbox="allow-same-origin"></iframe></div>' +
+						'<div class="mme-ai-limit" hidden>' +
+							'<strong class="mme-ai-limit-title"></strong>' +
+							'<p class="mme-ai-limit-text"></p>' +
+							'<a class="mme-ai-btn is-primary" target="_blank" rel="noopener">' + _.escape( t.upgrade ) + '</a>' +
+						'</div>' +
 						'<div class="mme-ai-status" aria-live="polite"></div>' +
 					'</div>' +
 					'<div class="mme-ai-foot">' +
@@ -169,6 +174,7 @@
 		ui.$go = ui.$modal.find( '.mme-ai-go' );
 		ui.$retry = ui.$modal.find( '.mme-ai-retry' );
 		ui.$insert = ui.$modal.find( '.mme-ai-insert' );
+		ui.$limit = ui.$modal.find( '.mme-ai-limit' );
 
 		ui.$modal.on( 'click', '.mme-ai-mode', function () {
 			if ( state.busy || this.disabled ) {
@@ -212,11 +218,46 @@
 
 	function renderUsage() {
 		var usage = state.usage || {};
-		if ( usage.quota ) {
-			ui.$usage.text( format( t.usage, usage.used || 0, usage.quota ) ).show();
-		} else {
+		ui.$usage.removeClass( 'is-warn is-over' );
+		if ( ! usage.quota ) {
 			ui.$usage.hide();
+			return;
 		}
+		var used = usage.used || 0;
+		ui.$usage.text(
+			usage.plan_label ? format( t.usagePlan, usage.plan_label, used, usage.quota ) : format( t.usage, used, usage.quota )
+		).show();
+		var left = usage.quota - used;
+		if ( left <= 0 ) {
+			ui.$usage.addClass( 'is-over' );
+		} else if ( left <= Math.max( 1, Math.ceil( usage.quota * 0.2 ) ) ) {
+			ui.$usage.addClass( 'is-warn' );
+		}
+	}
+
+	function upgradeLink( url ) {
+		var base = url || ( state.usage && state.usage.upgrade_url ) || data.upgradeUrl;
+		if ( ! base || ! /^https?:\/\//.test( base ) ) {
+			return '';
+		}
+		return base + ( base.indexOf( '?' ) === -1 ? '?' : '&' ) + 'site=' + encodeURIComponent( data.site || '' ) + '&from=mme-ai';
+	}
+
+	/** Out of pages (or not in the plan): no Generate, a clear way to upgrade instead. */
+	function showLimit( url, notInPlan ) {
+		var link = upgradeLink( url );
+		ui.$limit.find( '.mme-ai-limit-title' ).text( notInPlan ? t.notInPlan : t.limitTitle );
+		ui.$limit.find( '.mme-ai-limit-text' ).text( notInPlan ? '' : t.limitText );
+		ui.$limit.find( 'a' ).attr( 'href', link || '#' ).toggle( !! link );
+		ui.$limit.prop( 'hidden', false );
+		ui.$form.hide();
+		ui.$go.prop( 'hidden', true );
+		setStatus( '' );
+	}
+
+	function limitReached() {
+		var usage = state.usage || {};
+		return usage.quota > 0 && ( usage.used || 0 ) >= usage.quota;
 	}
 
 	function setStatus( text, isError, withSettingsLink ) {
@@ -228,6 +269,7 @@
 
 	function showForm() {
 		state.result = null;
+		ui.$limit.prop( 'hidden', true );
 		ui.$dialog.removeClass( 'has-preview' );
 		ui.$preview.prop( 'hidden', true ).find( 'iframe' ).attr( 'srcdoc', '' );
 		ui.$form.show();
@@ -246,6 +288,14 @@
 			showForm();
 		}
 		renderUsage();
+		if ( ! state.busy && limitReached() ) {
+			showLimit( '', false );
+		} else if ( ! state.busy && state.usage && state.usage.quota ) {
+			var left = state.usage.quota - ( state.usage.used || 0 );
+			if ( left <= Math.max( 1, Math.ceil( state.usage.quota * 0.2 ) ) ) {
+				setStatus( format( t.fewLeft, left ) );
+			}
+		}
 		ui.$modal.prop( 'hidden', false );
 		setTimeout( function () {
 			ui.$brief.trigger( 'focus' );
@@ -309,12 +359,24 @@
 				fail( ( response && response.data && response.data.message ) || t.failed, true );
 				return;
 			}
+			// Keep the counter in step even if the job is later cancelled.
 			if ( response.data.usage ) {
 				state.usage = response.data.usage;
 				renderUsage();
 			}
 			poll( response.data.job, Date.now() );
 		} ).fail( function ( xhr ) {
+			var json = xhr && xhr.responseJSON;
+			var info = json && json.data ? json.data : {};
+			if ( 'quota_exceeded' === info.code || 'feature_off' === info.code ) {
+				setBusy( false );
+				if ( 'quota_exceeded' === info.code && state.usage && state.usage.quota ) {
+					state.usage.used = state.usage.quota;
+					renderUsage();
+				}
+				showLimit( info.upgrade_url, 'feature_off' === info.code );
+				return;
+			}
 			fail( errorMessage( xhr ), true );
 		} );
 	}
