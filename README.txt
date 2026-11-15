@@ -4,7 +4,7 @@ Plugin URI: https://mme.vn
 Tags: elementor, templates, template library, acf, scf
 Requires at least: 5.5
 Requires PHP: 7.2
-Stable tag: 1.9.4
+Stable tag: 1.9.5
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -28,6 +28,9 @@ Site Master và Client đều cần cài plugin này cùng Elementor.
 Phát triển dựa trên "Elements Share for Elementor" của DivDojo (GPL-2.0+).
 
 == Changelog ==
+
+= 1.9.5 =
+* Changed: MMe AI counts "AI generations" instead of "pages" (one generation is one section or one whole page), matching the larger MMe plan limits.
 
 = 1.9.4 =
 * Fixed: the "See plans & pricing" link keeps its #section anchor at the end, after the tracking parameters.

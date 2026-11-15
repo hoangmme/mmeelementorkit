@@ -249,7 +249,7 @@
 		return base + ( base.indexOf( '?' ) === -1 ? '?' : '&' ) + 'site=' + encodeURIComponent( data.site || '' ) + '&from=mme-ai' + hash;
 	}
 
-	/** Out of pages (or not in the plan): no Generate, a clear way to upgrade instead. */
+	/** Out of AI generations (or not in the plan): no Generate, a clear way to upgrade instead. */
 	function showLimit( url, notInPlan ) {
 		var link = upgradeLink( url );
 		ui.$limit.find( '.mme-ai-limit-title' ).text( notInPlan ? t.notInPlan : t.limitTitle );

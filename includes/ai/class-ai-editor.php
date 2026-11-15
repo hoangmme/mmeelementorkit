@@ -103,16 +103,16 @@ class Ems_Ai_Editor {
                 'usage'         => __( '%1$d / %2$d this month', 'mme-elementor-kit' ),
                 'settings'      => __( 'MMe Kit settings', 'mme-elementor-kit' ),
                 /* translators: 1: plan name, 2: used, 3: monthly limit */
-                'usagePlan'     => __( '%1$s · %2$d / %3$d pages this month', 'mme-elementor-kit' ),
+                'usagePlan'     => __( '%1$s · %2$d / %3$d AI generations this month', 'mme-elementor-kit' ),
                 /* translators: %d: pages left */
-                'fewLeft'       => __( 'Only %d AI page(s) left this month.', 'mme-elementor-kit' ),
-                'limitTitle'    => __( 'This month\'s AI pages are used up', 'mme-elementor-kit' ),
-                'limitText'     => __( 'Your pages renew on the 1st of next month. To keep creating now, message or call MMe to upgrade your plan or add pages.', 'mme-elementor-kit' ),
+                'fewLeft'       => __( 'Only %d AI generation(s) left this month.', 'mme-elementor-kit' ),
+                'limitTitle'    => __( 'This month\'s AI generations are used up', 'mme-elementor-kit' ),
+                'limitText'     => __( 'Each generation is one section or one whole page. They renew on the 1st of next month; to keep creating now, message or call MMe to upgrade your plan or add more.', 'mme-elementor-kit' ),
                 'upgrade'       => __( 'See plans & pricing', 'mme-elementor-kit' ),
                 'zalo'          => __( 'Message MMe on Zalo', 'mme-elementor-kit' ),
                 /* translators: %s: phone number */
                 'orCall'        => __( 'Or call %s', 'mme-elementor-kit' ),
-                'notInPlan'     => __( 'AI pages are not included in your current plan.', 'mme-elementor-kit' ),
+                'notInPlan'     => __( 'AI generations are not included in your current plan.', 'mme-elementor-kit' ),
             ),
         ) );
     }
