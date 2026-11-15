@@ -1190,10 +1190,6 @@
 .ems-app--mcp .ems-form-actions .ems-btn { white-space: normal; max-width: 100%; }
 
 /* AI layout generator (1.7.0) */
-.ems-ai-generate .ems-label { display: block; font-weight: 600; margin-bottom: 6px; }
-.ems-ai-generate textarea.ems-input { width: 100%; min-height: 110px; resize: vertical; }
-.ems-ai-generate__row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
-.ems-ai-generate__row select.ems-input { width: 100%; }
 .ems-ai-result { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
 .ems-ai-status { flex: 1 1 200px; }
 .ems-text-red { color: #b91c1c !important; }

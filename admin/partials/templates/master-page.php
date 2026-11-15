@@ -144,7 +144,7 @@ $usage = $stats['max_sites'] ? min( 100, round( $stats['active_sites'] / $stats[
                     <li><?php echo esc_html__( 'Create a key and choose which templates or categories it shares.', 'mme-elementor-kit' ); ?></li>
                     <li><?php echo esc_html__( 'Set how many client sites may connect with that key, then save.', 'mme-elementor-kit' ); ?></li>
                     <li><?php echo esc_html__( 'On the client site, open MMe Kit → Client and paste the URL and key.', 'mme-elementor-kit' ); ?></li>
-                    <li><?php echo esc_html__( 'The client inserts templates from the MMe Library tab of the Elementor library.', 'mme-elementor-kit' ); ?></li>
+                    <li><?php echo esc_html__( 'The client inserts templates from the MMe Templates tab of the Elementor library.', 'mme-elementor-kit' ); ?></li>
                 </ol>
                 <a class="ems-link" href="<?php echo esc_url( admin_url( 'edit.php?post_type=elementor_library' ) ); ?>">
                     <?php echo esc_html__( 'Manage Elementor templates', 'mme-elementor-kit' ); ?> →

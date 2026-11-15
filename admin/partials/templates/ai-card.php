@@ -15,19 +15,10 @@ $ai_ready   = $ai_has_key && '' !== Ems_Ai_Client::get_key();
 $ai_notice  = Ems_Ai_Layout::key_notice();
 $ai_status  = isset( $ai_data['status'] ) ? $ai_data['status'] : '';
 
-$ai_pages = get_posts( array(
-    'post_type'      => array( 'page', 'post' ),
-    'post_status'    => array( 'publish', 'draft', 'private' ),
-    'posts_per_page' => 100,
-    'orderby'        => 'modified',
-    'order'          => 'DESC',
-    'meta_key'       => '_elementor_edit_mode', // phpcs:ignore WordPress.DB.SlowDBQuery
-    'meta_value'     => 'builder', // phpcs:ignore WordPress.DB.SlowDBQuery
-) );
 ?>
 <div class="ems-card" id="mme-ai">
     <h2 class="ems-card__title"><?php echo esc_html__( 'AI layout generator', 'mme-elementor-kit' ); ?></h2>
-    <p class="ems-card__desc"><?php echo esc_html__( 'Describe a section or a page; the MMe AI writes it with your business information and builds it with Elementor containers and core widgets, using your global colors. Images are placeholders to replace.', 'mme-elementor-kit' ); ?></p>
+    <p class="ems-card__desc"><?php echo esc_html__( 'Connect this site to MMe AI, then create sections inside the Elementor editor with the "MMe AI" button: editable Elementor containers using your global colors, or a free-design HTML block. The AI uses your business information from MMe; images are placeholders to replace.', 'mme-elementor-kit' ); ?></p>
 
     <?php if ( $ai_legacy ) : ?>
         <div class="ems-alert ems-alert--warning ems-field">
@@ -92,44 +83,9 @@ $ai_pages = get_posts( array(
     </form>
 
     <?php if ( $ai_ready ) : ?>
-        <form class="ems-ai-generate ems-field" data-nonce="<?php echo esc_attr( wp_create_nonce( 'mme_kit_ai_generate' ) ); ?>">
-            <label class="ems-label" for="ems-ai-brief"><?php echo esc_html__( 'What should it build?', 'mme-elementor-kit' ); ?></label>
-            <textarea id="ems-ai-brief" class="ems-input" rows="5" maxlength="4000" placeholder="<?php echo esc_attr__( 'e.g. Landing page for an accounting service for small businesses in Hanoi: monthly bookkeeping, tax filing, payroll. Friendly, trustworthy. Button to book a free consultation.', 'mme-elementor-kit' ); ?>"></textarea>
-
-            <div class="ems-ai-generate__row ems-field">
-                <label>
-                    <span class="ems-label"><?php echo esc_html__( 'Type', 'mme-elementor-kit' ); ?></span>
-                    <select class="ems-input" name="kind">
-                        <?php foreach ( Ems_Ai_Layout::kinds() as $value => $label ) : ?>
-                            <option value="<?php echo esc_attr( $value ); ?>"><?php echo esc_html( $label ); ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </label>
-                <label>
-                    <span class="ems-label"><?php echo esc_html__( 'Save to', 'mme-elementor-kit' ); ?></span>
-                    <select class="ems-input" name="target">
-                        <option value="0"><?php echo esc_html__( 'New template (Templates → Saved Templates)', 'mme-elementor-kit' ); ?></option>
-                        <?php foreach ( $ai_pages as $ai_page ) : ?>
-                            <option value="<?php echo esc_attr( $ai_page->ID ); ?>">
-                                <?php
-                                /* translators: %s: page title */
-                                echo esc_html( sprintf( __( 'End of page: %s', 'mme-elementor-kit' ), $ai_page->post_title ? $ai_page->post_title : '#' . $ai_page->ID ) );
-                                ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </label>
-            </div>
-
-            <div class="ems-form-actions">
-                <button type="submit" class="ems-btn ems-btn--primary">
-                    <span class="dashicons dashicons-admin-customizer"></span>
-                    <?php echo esc_html__( 'Generate', 'mme-elementor-kit' ); ?>
-                </button>
-                <span class="ems-ai-status ems-hint" aria-live="polite"></span>
-            </div>
-            <div class="ems-ai-result" hidden></div>
-            <span class="ems-hint ems-field"><?php echo esc_html__( 'Takes 20–90 seconds. Appending to a page keeps a revision, so it can be undone from Elementor History.', 'mme-elementor-kit' ); ?></span>
-        </form>
+        <div class="ems-alert ems-alert--success ems-field">
+            <span class="dashicons dashicons-admin-customizer"></span>
+            <?php echo esc_html__( 'Ready. Open a page with Elementor and click the purple "MMe AI" button in any "add section" area: choose Elementor or HTML, describe the section, and it is added right there (Ctrl+Z to undo).', 'mme-elementor-kit' ); ?>
+        </div>
     <?php endif; ?>
 </div>

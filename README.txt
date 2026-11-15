@@ -4,7 +4,7 @@ Plugin URI: https://mme.vn
 Tags: elementor, templates, template library, acf, scf
 Requires at least: 5.5
 Requires PHP: 7.2
-Stable tag: 1.8.0
+Stable tag: 1.9.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -13,8 +13,9 @@ Bộ công cụ Elementor của MMe.vn: chia sẻ template Master → Client và
 == Description ==
 
 * Master (Server): chỉ mở khi có mã kích hoạt do MMe.vn cấp cho đúng tên miền. Tạo secret key, chọn template / danh mục được chia sẻ và giới hạn số site cho mỗi key.
-* Client: kết nối tới site Master bằng URL + secret key, chèn template từ tab "MMe Library" trong thư viện Elementor.
+* Client: kết nối tới site Master bằng URL + secret key, chèn template bằng nút "MMe Templates" trong Elementor.
 * Areas: thêm vùng Elementor thứ 2 (vd. "Bottom") cho mỗi bài, có nút "Edit Bottom with Elementor" riêng; hiện tự động sau the_content() hoặc qua widget Post Area / shortcode [mme_area name="bottom"].
+* MMe AI: trong Elementor, bấm nút "MMe AI" ở khung thêm section để tạo section bằng AI (Elementor hoặc HTML) ngay tại chỗ, dùng MMe API key.
 * MMe Widgets: "Profile Carousel" — slide lớn (ảnh + tên, chức vụ, mô tả, nút) và dải ảnh nhỏ bên dưới để chuyển người; nhập tay hoặc lấy từ bài viết / CPT (ảnh đại diện, tiêu đề, field ACF).
 * MMe Widgets: "Map (no API key)" — bản đồ Google từ địa chỉ, toạ độ, link Google Maps (kể cả maps.app.goo.gl) hoặc field ACF Google Map / Link.
 * MMe Widgets: "Info Table (ACF)" — bảng thông tin label / giá trị lấy từ field ACF/SCF, post meta, shortcode hoặc dynamic tag.
@@ -27,6 +28,12 @@ Site Master và Client đều cần cài plugin này cùng Elementor.
 Phát triển dựa trên "Elements Share for Elementor" của DivDojo (GPL-2.0+).
 
 == Changelog ==
+
+= 1.9.0 =
+* New: "MMe AI" button in the Elementor editor, in every "add section" area (next to MMe Templates). Choose Elementor (containers and core widgets you can edit one by one, in your global colors) or HTML (one free-design HTML block, previewed before inserting), pick what to build, describe it, and the result is added right at that spot as an unsaved change: one Ctrl+Z undoes it. Shows this month's usage; errors (key revoked, monthly limit) link to the settings.
+* Changed: generating from MMe Kit → MCP, AI & Logs is removed; that card now only connects the MMe key. Generation runs as short requests (start, then progress checks), so proxies with a ~100 s limit no longer cut it.
+* Changed: the template library button is now "MMe Templates" and only appears when the site is connected to a Master site. "MMe AI" only appears when an MMe key is saved.
+* HTML mode is offered to users who may add unfiltered HTML (administrators/editors); the HTML is cleaned by MMe (no scripts, frames, event handlers or external resources) and its CSS only applies inside its own block.
 
 = 1.8.0 =
 * Changed: the AI layout generator now runs through the MMe AI service. Paste the MMe API key (starts with "mme_", given by MMe) instead of an AI provider key: no AI account of your own is needed, and the layout uses your business information from MMe (services, prices, contact) instead of placeholders where it can. Usage counts against the MMe account's monthly page limit, shown next to the key.

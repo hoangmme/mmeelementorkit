@@ -24,7 +24,6 @@ class Ems_Ai_Layout {
 
     public function __construct() {
         add_action( 'admin_init', array( $this, 'handle_key_form' ) );
-        add_action( 'wp_ajax_mme_kit_ai_generate', array( $this, 'ajax_generate' ) );
     }
 
     /* ------------------------------------------------------------------ */
@@ -99,143 +98,6 @@ class Ems_Ai_Layout {
         return null;
     }
 
-    /* ------------------------------------------------------------------ */
-    /* Admin: generate (streamed so proxies do not time out)                */
-    /* ------------------------------------------------------------------ */
-
-    public function ajax_generate() {
-        if ( ! current_user_can( 'manage_options' ) || ! check_ajax_referer( 'mme_kit_ai_generate', 'nonce', false ) ) {
-            status_header( 403 );
-            exit;
-        }
-
-        $brief   = isset( $_POST['brief'] ) ? sanitize_textarea_field( wp_unslash( $_POST['brief'] ) ) : '';
-        $kind    = isset( $_POST['kind'] ) ? sanitize_key( $_POST['kind'] ) : 'auto';
-        $target  = isset( $_POST['target'] ) ? absint( $_POST['target'] ) : 0;
-
-        // Stream plain-text lines: "P <chars>" progress, "R <json>" result, "E <message>" error.
-        ignore_user_abort( true );
-        if ( function_exists( 'set_time_limit' ) ) {
-            @set_time_limit( 300 ); // phpcs:ignore WordPress.PHP.NoSilencedErrors
-        }
-        while ( ob_get_level() > 0 ) {
-            ob_end_clean();
-        }
-        header( 'Content-Type: text/plain; charset=utf-8' );
-        header( 'Cache-Control: no-cache' );
-        header( 'X-Accel-Buffering: no' );
-
-        $send = function ( $type, $text ) {
-            echo $type . ' ' . str_replace( "\n", ' ', $text ) . "\n"; // phpcs:ignore WordPress.Security.EscapeOutput
-            echo str_repeat( ' ', 1024 ) . "\n"; // Pushes small chunks through buffering proxies.
-            flush();
-        };
-
-        if ( mb_strlen( $brief ) < 10 ) {
-            $send( 'E', __( 'Describe the layout in a sentence or more.', 'mme-elementor-kit' ) );
-            exit;
-        }
-        if ( $target && ( ! current_user_can( 'edit_post', $target ) || ! $this->is_elementor_page( $target ) ) ) {
-            $send( 'E', __( 'That page cannot be edited with Elementor.', 'mme-elementor-kit' ) );
-            exit;
-        }
-
-        if ( ! array_key_exists( $kind, self::kinds() ) ) {
-            $kind = 'auto';
-        }
-
-        $send( 'S', __( 'Writing the layout…', 'mme-elementor-kit' ) );
-        $layout = Ems_Ai_Client::generate(
-            array(
-                'brief'     => $brief,
-                'kind'      => $kind,
-                'site_name' => get_bloginfo( 'name' ),
-            ),
-            function ( $seconds ) use ( $send ) {
-                /* translators: %d: seconds since the request started */
-                $send( 'S', sprintf( __( 'Writing the layout… %ds', 'mme-elementor-kit' ), $seconds ) );
-            }
-        );
-        if ( is_wp_error( $layout ) ) {
-            $send( 'E', $layout->get_error_message() );
-            exit;
-        }
-
-        $send( 'S', __( 'Building the Elementor layout…', 'mme-elementor-kit' ) );
-        $result = $this->create( $layout, $target );
-        if ( is_wp_error( $result ) ) {
-            $send( 'E', $result->get_error_message() );
-            exit;
-        }
-        $send( 'R', wp_json_encode( $result ) );
-        exit;
-    }
-
-    /**
-     * Turn a layout into Elementor data and save it.
-     *
-     * @param array|string $layout Layout from the MMe AI service (array, or its JSON text).
-     * @param int          $target 0 for a new template, or a page to append to.
-     * @return array|\WP_Error
-     */
-    public function create( $layout, $target = 0 ) {
-        if ( is_string( $layout ) ) {
-            $layout = json_decode( $this->strip_fences( $layout ), true );
-        }
-        if ( ! is_array( $layout ) ) {
-            return Ems_Ai_Client::error( 'bad_json' );
-        }
-        $elements = $this->build( $layout );
-        if ( ! $elements ) {
-            return Ems_Ai_Client::error( 'no_sections' );
-        }
-        $title = ! empty( $layout['title'] ) ? sanitize_text_field( $layout['title'] ) : __( 'AI layout', 'mme-elementor-kit' );
-
-        if ( $target ) {
-            $document = \Elementor\Plugin::$instance->documents->get( $target, false );
-            $data     = $document->get_elements_data();
-            $saved    = $document->save( array( 'elements' => array_merge( (array) $data, $elements ) ) );
-            if ( ! $saved ) {
-                return new \WP_Error( 'mme_kit_ai_save', __( 'Elementor did not save the page.', 'mme-elementor-kit' ) );
-            }
-            return array(
-                'title'    => get_the_title( $target ),
-                'sections' => count( $elements ),
-                'edit'     => $document->get_edit_url(),
-                'view'     => get_permalink( $target ),
-                'target'   => 'page',
-            );
-        }
-
-        $source = \Elementor\Plugin::$instance->templates_manager->get_source( 'local' );
-        $id     = $source->save_item( array(
-            'title'   => '[AI] ' . $title,
-            'type'          => 'page',
-            'content'       => $elements,
-            // Full-width canvas with header and footer, so the preview is not squeezed by the theme.
-            'page_settings' => array( 'template' => 'elementor_header_footer' ),
-        ) );
-        if ( is_wp_error( $id ) ) {
-            return $id;
-        }
-        $document = \Elementor\Plugin::$instance->documents->get( $id, false );
-        return array(
-            'title'    => get_the_title( $id ),
-            'sections' => count( $elements ),
-            'edit'     => $document ? $document->get_edit_url() : admin_url( 'post.php?post=' . $id . '&action=elementor' ),
-            'view'     => get_permalink( $id ),
-            'target'   => 'template',
-        );
-    }
-
-    private function strip_fences( $text ) {
-        $text = trim( (string) $text );
-        if ( preg_match( '/^```(?:json)?\s*(.*?)\s*```$/s', $text, $m ) ) {
-            $text = $m[1];
-        }
-        return $text;
-    }
-
     public function is_elementor_page( $post_id ) {
         return class_exists( '\Elementor\Plugin' ) && 'builder' === get_post_meta( $post_id, '_elementor_edit_mode', true );
     }
@@ -281,6 +143,30 @@ class Ems_Ai_Layout {
             'dark'    => array( 'bg' => '#0F172A', 'heading' => '#FFFFFF', 'text' => '#CBD5E1', 'card' => 'rgba(255,255,255,0.06)', 'border' => 'rgba(255,255,255,0.14)', 'on_dark' => true ),
         );
         return isset( $palettes[ $style ] ) ? $palettes[ $style ] : $palettes['light'];
+    }
+
+    /**
+     * The site's primary brand color (active Elementor kit), for the HTML mode.
+     */
+    public function brand_color() {
+        return $this->kit_color( 'primary', '#1E3A8A' );
+    }
+
+    /**
+     * One full-width container holding an HTML widget (MMe AI "HTML" mode).
+     *
+     * @param string $html Block from the MMe AI service (already sanitized and scoped there).
+     * @return array Elementor elements.
+     */
+    public function html_elements( $html ) {
+        $settings = array(
+            'content_width' => 'full',
+            'flex_direction' => 'column',
+            'padding'       => $this->box( 0, 0, 0, 0, true ),
+        );
+        return array(
+            $this->container( $settings, array( $this->widget( 'html', array( 'html' => (string) $html ) ) ), false ),
+        );
     }
 
     /**

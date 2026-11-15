@@ -104,7 +104,7 @@ $host      = $url ? wp_parse_url( $url, PHP_URL_HOST ) : '';
                 <ol class="ems-steps">
                     <li><?php echo esc_html__( 'Open any page with Elementor.', 'mme-elementor-kit' ); ?></li>
                     <li><?php echo esc_html__( 'Click the folder icon to open the template library.', 'mme-elementor-kit' ); ?></li>
-                    <li><?php echo esc_html__( 'Switch to the MMe Library tab and insert a template.', 'mme-elementor-kit' ); ?></li>
+                    <li><?php echo esc_html__( 'Switch to the MMe Templates tab and insert a template.', 'mme-elementor-kit' ); ?></li>
                 </ol>
                 <p class="ems-note">
                     <span class="dashicons dashicons-info-outline"></span>

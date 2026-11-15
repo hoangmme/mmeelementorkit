@@ -29,11 +29,6 @@ class Ems_Ai_Client {
 
     const KEY_PATTERN = '/^mme_[A-Za-z0-9_-]{20,200}$/';
 
-    /** Seconds to wait for one generation (the service gives up at 240). */
-    const MAX_WAIT = 270;
-
-    const POLL_EVERY = 3;
-
     private static $instance = null;
 
     /* ------------------------------------------------------------------ */
@@ -218,60 +213,64 @@ class Ems_Ai_Client {
     }
 
     /**
-     * Ask MMe to write a layout and wait for it.
+     * Start a generation on the MMe AI service.
      *
-     * $on_wait( int $seconds ) is called while waiting, for progress messages.
-     *
-     * @param array    $request brief, kind, site_name.
-     * @param callable $on_wait
-     * @return array|\WP_Error The layout (title, sections).
+     * @param array $request brief, kind, site_name, output ('layout' or 'html_block'), primary_color.
+     * @return array|\WP_Error { id, usage }
      */
-    public static function generate( $request, $on_wait = null ) {
-        $job = self::request( 'POST', '/api/v1/pages', array(
+    public static function start_job( $request ) {
+        $body = array(
             'brief'         => (string) $request['brief'],
             'kind'          => (string) $request['kind'],
             'site_name'     => (string) $request['site_name'],
-            'output'        => 'layout',
-            'use_knowledge' => true,
-        ) );
+            'output'        => 'html_block' === $request['output'] ? 'html_block' : 'layout',
+            'use_knowledge' => ! empty( $request['use_knowledge'] ),
+        );
+        if ( ! empty( $request['primary_color'] ) && preg_match( '/^#[0-9a-f]{6}$/i', $request['primary_color'] ) ) {
+            $body['primary_color'] = $request['primary_color'];
+        }
+        $job = self::request( 'POST', '/api/v1/pages', $body );
         if ( is_wp_error( $job ) ) {
             return $job;
         }
-        if ( isset( $job['usage'] ) && is_array( $job['usage'] ) ) {
-            self::update_data( array( 'usage' => self::clean_usage( $job['usage'] ) ) );
+        $usage = isset( $job['usage'] ) && is_array( $job['usage'] ) ? self::clean_usage( $job['usage'] ) : array();
+        if ( $usage ) {
+            self::update_data( array( 'usage' => $usage ) );
         }
-        if ( empty( $job['id'] ) || ! preg_match( '/^[0-9a-f-]{36}$/', $job['id'] ) ) {
+        if ( empty( $job['id'] ) || ! self::is_job_id( $job['id'] ) ) {
             return self::error( 'service' );
         }
+        return array( 'id' => $job['id'], 'usage' => $usage );
+    }
 
-        $started = time();
-        while ( time() - $started < self::MAX_WAIT ) {
-            sleep( self::POLL_EVERY );
-            if ( $on_wait ) {
-                call_user_func( $on_wait, time() - $started );
-            }
-            $state = self::request( 'GET', '/api/v1/pages/' . $job['id'] );
-            if ( is_wp_error( $state ) ) {
-                // A failed poll (network blip) is retried until the time is up.
-                if ( in_array( $state->get_error_code(), array( 'mme_kit_ai_network', 'mme_kit_ai_service', 'mme_kit_ai_busy' ), true ) ) {
-                    continue;
-                }
-                return $state;
-            }
-            $status = isset( $state['status'] ) ? $state['status'] : '';
-            if ( 'done' === $status ) {
-                if ( empty( $state['result']['layout'] ) || ! is_array( $state['result']['layout'] ) ) {
-                    return self::error( 'no_sections' );
-                }
-                return $state['result']['layout'];
-            }
-            if ( 'error' === $status ) {
-                $code    = isset( $state['error']['code'] ) ? sanitize_key( $state['error']['code'] ) : 'service';
-                $message = isset( $state['error']['message'] ) ? sanitize_text_field( $state['error']['message'] ) : '';
-                return self::error( $code, $message );
-            }
+    public static function is_job_id( $id ) {
+        return (bool) preg_match( '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', (string) $id );
+    }
+
+    /**
+     * Current state of a generation.
+     *
+     * @param string $id
+     * @return array|\WP_Error { status: running|done, result } — a failed job comes back as a WP_Error.
+     */
+    public static function job_state( $id ) {
+        if ( ! self::is_job_id( $id ) ) {
+            return self::error( 'rejected' );
         }
-        return self::error( 'timeout' );
+        $state = self::request( 'GET', '/api/v1/pages/' . $id );
+        if ( is_wp_error( $state ) ) {
+            return $state;
+        }
+        $status = isset( $state['status'] ) ? $state['status'] : '';
+        if ( 'error' === $status ) {
+            $code    = isset( $state['error']['code'] ) ? sanitize_key( $state['error']['code'] ) : 'service';
+            $message = isset( $state['error']['message'] ) ? sanitize_text_field( $state['error']['message'] ) : '';
+            return self::error( $code, $message );
+        }
+        if ( 'done' === $status ) {
+            return array( 'status' => 'done', 'result' => isset( $state['result'] ) && is_array( $state['result'] ) ? $state['result'] : array() );
+        }
+        return array( 'status' => 'running' );
     }
 
     /* ------------------------------------------------------------------ */

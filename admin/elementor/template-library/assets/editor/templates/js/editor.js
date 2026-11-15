@@ -605,9 +605,14 @@
 
 		initEms_ElementorSectionsTempsButton: function () {
 
+			// Not connected to a Master site: nothing to insert, so no button.
+			if (!Ems_ElementorSectionsData.connected) {
+				return;
+			}
+
 			setTimeout(function () {
 				var $addNewSection = window.elementor.$previewContents.find('.elementor-add-new-section'),
-					addEms_ElementorSectionsTemplate = "<div class='elementor-add-section-area-button ems-add-section-btn' title='MMe Library'><img src='"+Ems_ElementorSectionsData.icon+"'></div>",
+					addEms_ElementorSectionsTemplate = "<div class='elementor-add-section-area-button ems-add-section-btn' title='" + _.escape(Ems_ElementorSectionsData.buttonTitle || 'MMe Templates') + "'><img src='"+Ems_ElementorSectionsData.icon+"'></div>",
 					$addEms_ElementorSectionsTemplate;
 
 				if ($addNewSection.length) {

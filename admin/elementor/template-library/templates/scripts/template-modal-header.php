@@ -5,7 +5,7 @@
 ?>
 <div id="emselementor-template-modal-header-title">
     <span class="emselementor-template-modal-header-title__logo"><img src="<?php echo EMS_ELEMENTS_SHARE_URL . 'admin/elementor/template-library/assets/editor/templates/img/mme-kit-logo.svg'; ?>" /></span>
-    <?php echo esc_html__( 'MMe Library', 'mme-elementor-kit' ); ?>
+    <?php echo esc_html__( 'MMe Templates', 'mme-elementor-kit' ); ?>
 </div>
 <div id="emselementor-template-modal-header-tabs"></div>
 <div id="emselementor-template-modal-header-actions">

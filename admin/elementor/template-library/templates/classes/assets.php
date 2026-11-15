@@ -117,6 +117,9 @@ if ( ! class_exists( 'Ems_Elementor_Templates_Assets' ) ) {
 						'modalRegions'      => $this->get_modal_region(),
 						'Elementor_Version' => ELEMENTOR_VERSION,
 						'icon'              => EMS_ELEMENTS_SHARE_URL . 'admin/elementor/template-library/assets/editor/templates/img/mme-kit-logo.svg',
+						// The "MMe Templates" button is shown only once this site is connected to a Master site.
+						'connected'         => '' !== (string) get_option( 'ems_elements_share_server_url', '' ) && '' !== (string) get_option( 'ems_elements_share_server_key', '' ),
+						'buttonTitle'       => __( 'MMe Templates', 'mme-elementor-kit' ),
 					)
 				)
 			);
