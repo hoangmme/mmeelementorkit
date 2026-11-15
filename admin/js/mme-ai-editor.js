@@ -151,7 +151,11 @@
 						'<div class="mme-ai-limit" hidden>' +
 							'<strong class="mme-ai-limit-title"></strong>' +
 							'<p class="mme-ai-limit-text"></p>' +
-							'<a class="mme-ai-btn is-primary" target="_blank" rel="noopener">' + _.escape( t.upgrade ) + '</a>' +
+							'<div class="mme-ai-limit-actions">' +
+								'<a class="mme-ai-btn is-primary mme-ai-zalo" target="_blank" rel="noopener">' + _.escape( t.zalo ) + '</a>' +
+								'<a class="mme-ai-btn mme-ai-pricing" target="_blank" rel="noopener">' + _.escape( t.upgrade ) + '</a>' +
+							'</div>' +
+							'<p class="mme-ai-limit-call"></p>' +
 						'</div>' +
 						'<div class="mme-ai-status" aria-live="polite"></div>' +
 					'</div>' +
@@ -248,7 +252,20 @@
 		var link = upgradeLink( url );
 		ui.$limit.find( '.mme-ai-limit-title' ).text( notInPlan ? t.notInPlan : t.limitTitle );
 		ui.$limit.find( '.mme-ai-limit-text' ).text( notInPlan ? '' : t.limitText );
-		ui.$limit.find( 'a' ).attr( 'href', link || '#' ).toggle( !! link );
+		var usage = state.usage || {};
+		var zalo = usage.support_zalo_url || data.supportZaloUrl;
+		var phone = usage.support_phone || data.supportPhone;
+		ui.$limit.find( '.mme-ai-pricing' ).attr( 'href', link || '#' ).toggle( !! link );
+		ui.$limit.find( '.mme-ai-zalo' ).attr( 'href', zalo || '#' ).toggle( !! zalo );
+		var $call = ui.$limit.find( '.mme-ai-limit-call' ).empty();
+		if ( phone ) {
+			var parts = t.orCall.split( '%s' );
+			$call.append(
+				document.createTextNode( parts[ 0 ] || '' ),
+				$( '<a>' ).attr( 'href', 'tel:' + String( phone ).replace( /[^\d+]/g, '' ) ).text( phone ),
+				document.createTextNode( parts[ 1 ] || '' )
+			);
+		}
 		ui.$limit.prop( 'hidden', false );
 		ui.$form.hide();
 		ui.$go.prop( 'hidden', true );

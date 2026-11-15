@@ -159,3 +159,6 @@
 .mme-ai-limit-text { margin: 0; font-size: 13px; color: #334155; line-height: 1.5; }
 .mme-ai-limit-text:empty { display: none; }
 .mme-ai-limit a.mme-ai-btn { text-decoration: none; display: inline-block; }
+.mme-ai-limit-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.mme-ai-limit-call { margin: 0; font-size: 13px; color: #334155; }
+.mme-ai-limit-call a { color: #0068f8; font-weight: 600; text-decoration: none; }

@@ -62,6 +62,9 @@ class Ems_Ai_Editor {
             'settingsUrl' => admin_url( 'admin.php?page=mme-elementor-kit-mcp#mme-ai' ),
             'site'        => wp_parse_url( home_url(), PHP_URL_HOST ),
             'upgradeUrl'  => 'https://mme.vn',
+            // Fallbacks; the MMe service sends the current ones with the usage.
+            'supportPhone'   => '0906 220 284',
+            'supportZaloUrl' => 'https://zalo.me/0906220284',
             'canHtml'     => current_user_can( 'unfiltered_html' ),
             'usage'       => $usage,
             'kinds'       => Ems_Ai_Layout::kinds(),
@@ -104,8 +107,11 @@ class Ems_Ai_Editor {
                 /* translators: %d: pages left */
                 'fewLeft'       => __( 'Only %d AI page(s) left this month.', 'mme-elementor-kit' ),
                 'limitTitle'    => __( 'This month\'s AI pages are used up', 'mme-elementor-kit' ),
-                'limitText'     => __( 'Your plan\'s pages renew on the 1st of next month. Upgrade your plan or buy extra pages from MMe to keep creating now.', 'mme-elementor-kit' ),
-                'upgrade'       => __( 'Upgrade plan', 'mme-elementor-kit' ),
+                'limitText'     => __( 'Your pages renew on the 1st of next month. To keep creating now, message or call MMe to upgrade your plan or add pages.', 'mme-elementor-kit' ),
+                'upgrade'       => __( 'See plans & pricing', 'mme-elementor-kit' ),
+                'zalo'          => __( 'Message MMe on Zalo', 'mme-elementor-kit' ),
+                /* translators: %s: phone number */
+                'orCall'        => __( 'Or call %s', 'mme-elementor-kit' ),
                 'notInPlan'     => __( 'AI pages are not included in your current plan.', 'mme-elementor-kit' ),
             ),
         ) );

@@ -211,6 +211,8 @@ class Ems_Ai_Client {
             'period'      => isset( $usage['period'] ) ? sanitize_text_field( $usage['period'] ) : '',
             'plan_label'  => isset( $usage['plan_label'] ) ? sanitize_text_field( $usage['plan_label'] ) : '',
             'upgrade_url' => isset( $usage['upgrade_url'] ) ? esc_url_raw( $usage['upgrade_url'] ) : '',
+            'support_phone'    => isset( $usage['support_phone'] ) ? sanitize_text_field( $usage['support_phone'] ) : '',
+            'support_zalo_url' => isset( $usage['support_zalo_url'] ) ? esc_url_raw( $usage['support_zalo_url'] ) : '',
         );
     }
 
