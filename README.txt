@@ -4,7 +4,7 @@ Plugin URI: https://mme.vn
 Tags: elementor, templates, template library, acf, scf
 Requires at least: 5.5
 Requires PHP: 7.2
-Stable tag: 1.9.0
+Stable tag: 1.9.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -28,6 +28,10 @@ Site Master và Client đều cần cài plugin này cùng Elementor.
 Phát triển dựa trên "Elements Share for Elementor" của DivDojo (GPL-2.0+).
 
 == Changelog ==
+
+= 1.9.1 =
+* Changed: MMe AI uses the MMe logo and its blue (#00A8D8 → #0068F8) for the button, active choices and the Generate button.
+* Fix: with Elementor's dark UI theme the MMe AI description box was black and the checkbox pink; the dialog now always stays light.
 
 = 1.9.0 =
 * New: "MMe AI" button in the Elementor editor, in every "add section" area (next to MMe Templates). Choose Elementor (containers and core widgets you can edit one by one, in your global colors) or HTML (one free-design HTML block, previewed before inserting), pick what to build, describe it, and the result is added right at that spot as an unsaved change: one Ctrl+Z undoes it. Shows this month's usage; errors (key revoked, monthly limit) link to the settings.

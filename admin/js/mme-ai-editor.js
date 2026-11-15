@@ -129,7 +129,7 @@
 			'<div class="mme-ai-modal" hidden>' +
 				'<div class="mme-ai-dialog" role="dialog" aria-modal="true" aria-labelledby="mme-ai-title">' +
 					'<div class="mme-ai-head">' +
-						'<span class="mme-ai-badge"><img alt="" src="' + _.escape( data.icon ) + '"></span>' +
+						'<img class="mme-ai-logo" alt="MMe" src="' + _.escape( data.logo ) + '">' +
 						'<h2 id="mme-ai-title">' + _.escape( t.title ) + '</h2>' +
 						'<span class="mme-ai-usage"></span>' +
 						'<button type="button" class="mme-ai-x" aria-label="' + _.escape( t.close ) + '">×</button>' +

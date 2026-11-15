@@ -58,7 +58,7 @@ class Ems_Ai_Editor {
             'nonce'       => wp_create_nonce( self::NONCE ),
             'postId'      => isset( $_GET['post'] ) ? absint( $_GET['post'] ) : 0, // phpcs:ignore WordPress.Security.NonceVerification
             'icon'        => $this->asset_url( 'admin/img/mme-ai-icon.svg' ),
-            'logo'        => $this->asset_url( 'admin/elementor/template-library/assets/editor/templates/img/mme-kit-logo.svg' ),
+            'logo'        => $this->asset_url( 'admin/img/mme-logo.webp' ),
             'settingsUrl' => admin_url( 'admin.php?page=mme-elementor-kit-mcp#mme-ai' ),
             'canHtml'     => current_user_can( 'unfiltered_html' ),
             'usage'       => $usage,

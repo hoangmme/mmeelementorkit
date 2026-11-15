@@ -3,13 +3,13 @@
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	background: linear-gradient(135deg, #7c3aed, #4f46e5);
+	background: linear-gradient(135deg, #00a8d8, #0068f8);
 	color: #fff;
 	cursor: pointer;
 	position: relative;
 }
 .elementor-add-section-area-button.mme-ai-add-btn:hover {
-	background: linear-gradient(135deg, #6d28d9, #4338ca);
+	background: linear-gradient(135deg, #0096c2, #0052cc);
 }
 .elementor-add-section-area-button.mme-ai-add-btn img {
 	width: 20px;
